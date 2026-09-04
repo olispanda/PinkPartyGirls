@@ -52,28 +52,42 @@ Uploads landen automatisch in `Assets/uploads/`. Fürs Hero-Video eine komprimie
 
 ---
 
-## Hosting: GitHub Pages
+## Hosting: GitHub Pages + Domain `www.pinkpartygirls.ch`
 
-1. Im Repo **Settings → Pages**.
-2. **Source: Deploy from a branch** → Branch **`main`**, Ordner **`/ (root)`** → **Save**.
-3. Nach 1–2 Min ist die Seite unter `https://olispanda.github.io/PinkPartyGirls/` live.
-4. **Custom Domain** (siehe unten): unter *Settings → Pages → Custom domain* die
-   Domain eintragen → GitHub legt automatisch eine `CNAME`-Datei im Repo an →
-   danach **Enforce HTTPS** aktivieren.
+### 1. GitHub Pages aktivieren
 
-Jeder Commit auf `main` (auch die von Pages CMS) deployt automatisch neu.
+Repo → **Settings → Pages** → **Source: Deploy from a branch** → Branch **`main`**,
+Ordner **`/ (root)`** → **Save**. Jeder Commit auf `main` (auch die von Pages CMS)
+deployt danach automatisch neu.
 
-## Custom Domain (DNS beim Registrar)
+Die Datei [`CNAME`](CNAME) im Repo-Root enthält bereits `www.pinkpartygirls.ch` –
+GitHub übernimmt die Domain automatisch, sobald Pages aktiv ist und das DNS steht.
 
-`www.<deine-domain>` als Hauptadresse. Beim Registrar im DNS anlegen:
+### 2. DNS bei GoDaddy
 
-| Typ | Host | Wert |
-|---|---|---|
-| `CNAME` | `www` | `olispanda.github.io` |
-| `ALIAS`/`ANAME` | `@` | `olispanda.github.io` |
+GoDaddy → Domain `pinkpartygirls.ch` → **DNS → DNS Records**. GoDaddy kann kein
+ALIAS am Root, daher vier A-Records:
 
-Wenn der Registrar **kein** ALIAS/ANAME am Root kann, stattdessen **vier A-Records** auf `@`:
-`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+| Typ | Name (Host) | Wert | TTL |
+|---|---|---|---|
+| `A` | `@` | `185.199.108.153` | 600 |
+| `A` | `@` | `185.199.109.153` | 600 |
+| `A` | `@` | `185.199.110.153` | 600 |
+| `A` | `@` | `185.199.111.153` | 600 |
+| `CNAME` | `www` | `olispanda.github.io` | 600 |
+
+Optional zusätzlich IPv6 (vier `AAAA` auf `@`):
+`2606:50c0:8000::153`, `2606:50c0:8001::153`, `2606:50c0:8002::153`, `2606:50c0:8003::153`
+
+**Vorhandene Einträge anpassen:** GoDaddys Standard-Parking-`A`-Record auf `@` und
+den `CNAME www → @` (bzw. Parking) editieren/löschen, damit sie nicht kollidieren.
+MX-Einträge (falls E-Mail an der Domain hängt) **nicht anfassen**.
+
+### 3. HTTPS
+
+Wenn das DNS greift (10 Min – 1 h), zeigt Repo → **Settings → Pages** einen grünen
+Haken bei der Domain. Dann **Enforce HTTPS** anhaken (Zertifikat kommt in ~15 Min).
+`pinkpartygirls.ch` (ohne www) leitet automatisch auf `www.pinkpartygirls.ch`.
 
 ## Kontaktformular
 
