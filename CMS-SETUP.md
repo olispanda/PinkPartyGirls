@@ -1,73 +1,73 @@
 # CMS – Inhalte selbst bearbeiten
 
-Die Seite bleibt eine statische Website. Alle Texte, Listen und Bilder liegen
-als JSON in [`content/`](content/) und werden über ein Login-geschütztes
-Admin-Panel unter **`/admin`** bearbeitet ([Decap CMS](https://decapcms.org)).
-Jede Änderung wird automatisch ins Git committet und Netlify deployed die Seite neu.
+Die Seite bleibt eine statische Website. Alle Texte, Listen und Bilder liegen als
+JSON in [`content/`](content/) und werden im Browser durch [`js/cms.js`](js/cms.js)
+in die Seiten eingesetzt (das HTML enthält die Inhalte zusätzlich als Fallback).
+
+Bearbeitet wird alles über **[Pages CMS](https://pagescms.org)** – kostenlos,
+gehostet, kein eigener Server, kein Netlify Identity. Jede Speicherung macht einen
+Commit ins Repo `olispanda/PinkPartyGirls`, danach deployt Netlify automatisch neu.
 
 ```
 content/settings.json   Bandname, Footer-Text, Social-Links (überall)
 content/home.json       Startseite: Hero-Video/Logo, Slogan, Button
 content/about.json      About: Bio, Bandmitglieder, Presse-Zitat
 content/music.json      Music: alle Releases
-content/shows.json      Shows: Tour-Daten (füttert auch den Teaser auf der Startseite)
+content/shows.json      Shows: Tour-Daten (speist auch den Teaser auf der Startseite)
 content/contact.json    Contact: Booking-/Presse-Mail
 ```
 
-Die HTML-Dateien enthalten die Inhalte weiterhin als Fallback – wenn JavaScript
-oder ein Abruf fehlschlägt, zeigt die Seite trotzdem etwas an.
-Gerendert wird zur Laufzeit im Browser durch [`js/cms.js`](js/cms.js).
+Die Bearbeitungs-Oberfläche ist in [`.pages.yml`](.pages.yml) im Repo-Root definiert.
 
 ---
 
-## Einmalig einrichten (Netlify)
+## Einmalig einrichten (~3 Minuten)
 
-1. **Repo zu GitHub pushen** (falls noch nicht geschehen).
-2. Auf [app.netlify.com](https://app.netlify.com) → **Add new site → Import an existing project** → dieses Repo wählen.
-   Build command: *leer lassen*. Publish directory: `.` (steht schon in `netlify.toml`).
-3. Nach dem ersten Deploy: **Site configuration → Identity → Enable Identity**.
-4. Unter **Identity → Registration** auf **Invite only** stellen.
-5. Unter **Identity → Services → Git Gateway** → **Enable Git Gateway**.
-6. **Identity → Invite users** → eigene E-Mail-Adresse eintragen (und die der Bandkolleginnen).
-7. Einladungs-Mail öffnen → Passwort setzen. Fertig.
+1. **[app.pagescms.org](https://app.pagescms.org)** öffnen → **Sign in with GitHub**.
+2. Beim ersten Mal: die **Pages CMS GitHub App** installieren. Bei „Repository access"
+   **Only select repositories → `olispanda/PinkPartyGirls`** wählen.
+3. Zurück in Pages CMS das Repo `PinkPartyGirls` öffnen.
+4. `.pages.yml` liegt schon im Repo → die Oberfläche erscheint sofort mit den
+   Einträgen **Einstellungen / Startseite / About / Music / Shows / Contact**.
+5. Inhalt ändern → **Save**. Fertig – Commit + Netlify-Deploy laufen automatisch,
+   nach ~1 Minute ist es live.
 
-Danach: **https://pinkpartygirls.netlify.app/admin/** öffnen, einloggen, Inhalte
-ändern, **Publish** klicken. Nach ~1 Minute ist die Änderung live.
+### Bandkolleginnen ohne GitHub-Account
 
-> `site_url` / `display_url` in [`admin/config.yml`](admin/config.yml) stehen auf
-> `https://pinkpartygirls.netlify.app`. Bei eigener Domain dort anpassen.
+In Pages CMS unter **Settings → Collaborators** per E-Mail einladen. Sie können dann
+Inhalte und Bilder bearbeiten (aber nicht `.pages.yml` oder die Collaborator-Liste).
 
 ### Bilder & Video
-Uploads landen in `Assets/uploads/`. Für das Hero-Video am besten eine
-komprimierte `.mp4` (< ~10 MB) hochladen.
 
----
-
-## Lokal testen (ohne Netlife-Login)
-
-```bash
-npm install
-npm run cms      # Terminal 1: Decap-Proxy auf :8081 (schreibt direkt in ./content)
-npm run dev      # Terminal 2: Seite + /admin auf :3000
-```
-
-Dann [http://localhost:3000/admin/](http://localhost:3000/admin/) öffnen – kein
-Login nötig, Änderungen gehen direkt in die JSON-Dateien im Projektordner
-(`local_backend: true` in der Config).
+Uploads landen automatisch in `Assets/uploads/`. Fürs Hero-Video eine komprimierte
+`.mp4` nehmen (idealerweise < 10 MB).
 
 ---
 
 ## Kontaktformular
 
 Das Formular auf `contact.html` nutzt **Netlify Forms** (`data-netlify="true"`).
-Einsendungen erscheinen in Netlify unter **Forms**. Optional dort eine
+Einsendungen erscheinen im Netlify-Dashboard unter **Forms**. Dort optional eine
 E-Mail-Benachrichtigung einrichten (**Forms → Settings → Form notifications**).
+
+---
+
+## Lokal testen
+
+```bash
+npm install
+npm run dev        # Seite auf http://localhost:3000
+```
+
+Zum Bearbeiten der Inhalte reicht es, die Dateien unter `content/` direkt im Editor
+zu ändern – der Dev-Server lädt bei jeder Änderung neu.
 
 ---
 
 ## Ein Feld hinzufügen
 
 1. Feld in der passenden Datei unter `content/` ergänzen.
-2. Passendes `widget` in [`admin/config.yml`](admin/config.yml) eintragen.
+2. Passenden Feld-Eintrag in [`.pages.yml`](.pages.yml) hinzufügen
+   ([Feldtypen](https://pagescms.org/docs/configuration/content/fields/)).
 3. In [`js/cms.js`](js/cms.js) im jeweiligen `render…()` das Feld ins DOM schreiben
    und im HTML einen `id`- oder `data-cms`-Haken setzen.

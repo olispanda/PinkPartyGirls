@@ -1,17 +1,13 @@
 # Netlify configuration for the static Pink Party Girls site.
 # No build step — the repo root is published as-is.
+# Content is edited via Pages CMS (https://app.pagescms.org), which commits
+# straight to this repo; Netlify then redeploys.
 
 [build]
   publish = "."
   command = ""
 
-# Pretty URL for the CMS.
-[[redirects]]
-  from = "/admin"
-  to = "/admin/"
-  status = 301
-
-# Always serve fresh content JSON so edits show up immediately.
+# Always serve fresh content JSON so CMS edits show up immediately.
 [[headers]]
   for = "/content/*"
   [headers.values]

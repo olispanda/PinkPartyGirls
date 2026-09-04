@@ -1,0 +1,141 @@
+# Pages CMS configuration — https://pagescms.org/docs/configuration/
+# Edit content at https://app.pagescms.org (sign in with GitHub, open this repo).
+# Saves commit straight to the repo; Netlify then redeploys.
+
+media:
+  input: Assets/uploads
+  output: /Assets/uploads
+  categories: [image, video]
+
+settings:
+  content:
+    merge: true
+
+content:
+  - name: settings
+    label: Einstellungen · Social & Footer
+    type: file
+    path: content/settings.json
+    format: json
+    fields:
+      - { name: band_name, label: Bandname, type: string }
+      - { name: footer_copy, label: Footer-Text, type: string }
+      - name: social
+        label: Social Links
+        type: object
+        list:
+          collapsible:
+            collapsed: false
+            summary: "{fields.label}"
+        fields:
+          - { name: label, label: Name, type: string }
+          - { name: url, label: URL, type: string, description: "z. B. https://instagram.com/deinname" }
+
+  - name: home
+    label: Startseite
+    type: file
+    path: content/home.json
+    format: json
+    fields:
+      - { name: hero_video, label: Hero-Video (mp4), type: file }
+      - { name: hero_logo, label: Hero-Logo, type: file }
+      - { name: statement_heading, label: Aussage / Slogan, type: text }
+      - { name: statement_button_label, label: Button-Text, type: string }
+      - { name: statement_button_link, label: Button-Link, type: string }
+      - { name: events_heading, label: Events-Ueberschrift, type: string, description: "Die Termine darunter kommen automatisch aus dem Reiter Shows (die naechsten 3)." }
+
+  - name: about
+    label: About
+    type: file
+    path: content/about.json
+    format: json
+    fields:
+      - { name: eyebrow, label: Eyebrow, type: string }
+      - { name: title, label: Titel, type: string }
+      - { name: lede, label: Lead-Text, type: text }
+      - name: bio
+        label: Bio-Absaetze
+        type: text
+        list: true
+      - { name: lineup_eyebrow, label: Lineup · Eyebrow, type: string }
+      - { name: lineup_title, label: Lineup · Titel, type: string }
+      - name: members
+        label: Bandmitglieder
+        type: object
+        list:
+          collapsible:
+            collapsed: false
+            summary: "{fields.name} · {fields.role}"
+        fields:
+          - { name: name, label: Name, type: string }
+          - { name: role, label: Rolle, type: string }
+          - { name: photo, label: Foto, type: image, required: false }
+      - { name: quote, label: Presse-Zitat, type: text }
+      - { name: quote_cite, label: Zitat-Quelle, type: string }
+
+  - name: music
+    label: Music
+    type: file
+    path: content/music.json
+    format: json
+    fields:
+      - { name: eyebrow, label: Eyebrow, type: string }
+      - { name: title, label: Titel, type: string }
+      - { name: lede, label: Lead-Text, type: text }
+      - name: releases
+        label: Releases
+        type: object
+        list:
+          collapsible:
+            collapsed: false
+            summary: "{fields.title} · {fields.type} {fields.year}"
+        fields:
+          - { name: title, label: Titel, type: string }
+          - name: type
+            label: Typ
+            type: select
+            options:
+              values: [Single, EP, Album]
+          - { name: year, label: Jahr, type: string }
+          - { name: cover, label: Cover, type: image, required: false }
+          - { name: spotify, label: Spotify-Link, type: string, required: false }
+          - { name: apple, label: Apple-Music-Link, type: string, required: false }
+          - { name: youtube, label: YouTube-Link, type: string, required: false }
+
+  - name: shows
+    label: Shows
+    type: file
+    path: content/shows.json
+    format: json
+    fields:
+      - { name: eyebrow, label: Eyebrow, type: string }
+      - { name: title, label: Titel, type: string }
+      - { name: lede, label: Lead-Text, type: text }
+      - name: shows
+        label: Konzerte
+        type: object
+        list:
+          collapsible:
+            collapsed: false
+            summary: "{fields.date} · {fields.title}"
+        fields:
+          - name: date
+            label: Datum
+            type: date
+            options:
+              format: yyyy-MM-dd
+          - { name: title, label: Venue / Stadt, type: string }
+          - { name: location, label: Adresse, type: string }
+          - { name: tickets_url, label: Ticket-Link, type: string, required: false }
+
+  - name: contact
+    label: Contact
+    type: file
+    path: content/contact.json
+    format: json
+    fields:
+      - { name: eyebrow, label: Eyebrow, type: string }
+      - { name: title, label: Titel, type: string }
+      - { name: lede, label: Lead-Text, type: text }
+      - { name: booking_email, label: Booking-E-Mail, type: string }
+      - { name: press_email, label: Presse-E-Mail, type: string }
