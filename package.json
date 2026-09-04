@@ -1,0 +1,13 @@
+{
+  "name": "pink-party-girls",
+  "version": "1.0.0",
+  "description": "Static band website for Pink Party Girls",
+  "private": true,
+  "scripts": {
+    "dev": "browser-sync start --config bs-config.cjs",
+    "start": "npm run dev"
+  },
+  "devDependencies": {
+    "browser-sync": "^3.0.3"
+  }
+}
