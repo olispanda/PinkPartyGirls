@@ -6,7 +6,7 @@ module.exports = {
     index: "index.html",
   },
   // Watch every asset the pages use and reload / inject on change.
-  files: ["*.html", "css/*.css", "js/*.js", "Assets/**/*"],
+  files: ["*.html", "css/*.css", "js/*.js", "content/*.json", "Assets/**/*"],
   watchEvents: ["add", "change", "unlink"],
   // Inject CSS changes without a full page reload; reload for HTML/JS.
   injectChanges: true,

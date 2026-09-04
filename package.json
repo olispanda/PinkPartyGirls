@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "dev": "browser-sync start --config bs-config.cjs",
-    "start": "npm run dev"
+    "start": "npm run dev",
+    "cms": "npx --yes decap-server"
   },
   "devDependencies": {
     "browser-sync": "^3.0.3"

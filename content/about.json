@@ -1,0 +1,20 @@
+{
+  "eyebrow": "About",
+  "title": "The Story",
+  "lede": "Placeholder header copy — a one-line summary of who Pink Party Girls are.",
+  "bio": [
+    "Placeholder bio paragraph one. This is where the band's origin story goes — how they formed, where, and what they set out to do. Replace with real copy whenever it's ready.",
+    "Placeholder bio paragraph two. A bit more about the sound, influences, and what a Pink Party Girls show feels like.",
+    "Placeholder bio paragraph three. Recent milestones, releases, or anything else worth mentioning."
+  ],
+  "lineup_eyebrow": "The Lineup",
+  "lineup_title": "Meet The Band",
+  "members": [
+    { "name": "Member Name", "role": "Vocals", "photo": "" },
+    { "name": "Member Name", "role": "Guitar", "photo": "" },
+    { "name": "Member Name", "role": "Bass", "photo": "" },
+    { "name": "Member Name", "role": "Drums", "photo": "" }
+  ],
+  "quote": "\"Placeholder press quote about Pink Party Girls goes here.\"",
+  "quote_cite": "— Publication Name"
+}

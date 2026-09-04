@@ -53,6 +53,48 @@
 
   --grid-margin: 12px;
   --grid-gutter: 20px;
+
+  /* ======================================================================
+     RESPONSIVE FOUNDATION (Phase 1)
+     Fluid scales generated for a 320px → 1240px viewport range. Components
+     are migrated onto these tokens one at a time; until then the tokens are
+     inert and only the fluid root font-size below has any visual effect.
+
+     Breakpoints (mobile-first, use min-width):
+       md = 48rem  (768px)   ·   lg = 64rem (1024px)
+     ====================================================================== */
+
+  /* Fluid type scale — assign via font-size: var(--step-N) */
+  --step--1: clamp(0.833rem, 0.80rem + 0.16vw, 0.9375rem);
+  --step-0:  clamp(1rem, 0.96rem + 0.20vw, 1.125rem);
+  --step-1:  clamp(1.2rem, 1.12rem + 0.39vw, 1.42rem);
+  --step-2:  clamp(1.44rem, 1.31rem + 0.65vw, 1.80rem);
+  --step-3:  clamp(1.728rem, 1.52rem + 1.04vw, 2.27rem);
+  --step-4:  clamp(2.074rem, 1.77rem + 1.53vw, 2.87rem);
+  --step-5:  clamp(2.488rem, 2.02rem + 2.34vw, 3.63rem);
+  --step-6:  clamp(2.986rem, 2.29rem + 3.48vw, 4.58rem);
+
+  /* Fluid spacing scale — use for padding / margin / gap */
+  --space-2xs: clamp(0.5rem, 0.47rem + 0.16vw, 0.625rem);
+  --space-xs:  clamp(0.75rem, 0.70rem + 0.24vw, 0.9375rem);
+  --space-s:   clamp(1rem, 0.93rem + 0.33vw, 1.25rem);
+  --space-m:   clamp(1.5rem, 1.40rem + 0.49vw, 1.875rem);
+  --space-l:   clamp(2rem, 1.86rem + 0.65vw, 2.5rem);
+  --space-xl:  clamp(3rem, 2.79rem + 0.98vw, 3.75rem);
+  --space-2xl: clamp(4rem, 3.72rem + 1.31vw, 5rem);
+  --space-3xl: clamp(6rem, 5.58rem + 1.96vw, 7.5rem);
+
+  /* Layout primitives */
+  --cols: 4;                       /* 12-col grid collapses to 4 on mobile  */
+  --content-max: 62rem;            /* content-well width for the snap slides */
+  --tap-min: 44px;                 /* minimum touch target                  */
+  --gutter: clamp(1.25rem, 5vw, 2.5rem);  /* page side padding, fluid       */
+}
+
+@media (min-width: 48rem) {
+  :root {
+    --cols: 12;
+  }
 }
 
 * {
@@ -63,6 +105,15 @@ html {
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+  /* Fluid root: everything sized in rem/em now scales continuously between
+     phone and desktop, which removes most of the per-breakpoint "jump". */
+  font-size: clamp(1rem, 0.97rem + 0.16vw, 1.0625rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {
@@ -76,6 +127,11 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
+  /* Flatten all page content into one stacking context so the film-grain
+     overlay's mix-blend-mode blends against a single backdrop. Without this,
+     any element promoted to its own compositing layer on hover (buttons and
+     cards use transform: translateY) shows a rectangular blend seam. */
+  isolation: isolate;
 }
 
 img {
@@ -109,7 +165,7 @@ p {
 }
 
 .container {
-  width: min(1200px, 100% - (var(--grid-margin) * 2));
+  width: min(1200px, 100% - var(--gutter) * 2);
   margin-inline: auto;
   padding-inline: 0;
 }
@@ -230,6 +286,31 @@ section {
 .btn--outline:hover {
   background: var(--accent);
   color: var(--surface);
+}
+
+/* Every button carries a trailing arrow that nudges on hover. The "/ ''"
+   gives the pseudo-element empty alt text so screen readers skip it. */
+.btn::after,
+.btn-dark-outline::after {
+  content: "\2192" / "";
+  font-family: var(--font-ui);
+  font-size: 1.1em;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.btn:hover::after,
+.btn-dark-outline:hover::after {
+  transform: translateX(4px);
+}
+
+/* Buttons that leave the site (ticket shops, etc.) get a diagonal arrow. */
+.btn--external::after {
+  content: "\2197" / "";
+}
+
+.btn--external:hover::after {
+  transform: translate(3px, -3px);
 }
 
 .btn-row {
@@ -421,7 +502,8 @@ body.nav-open .nav__toggle::after {
 }
 
 .page-header {
-  padding: calc(var(--nav-height) + 5rem) 0 3rem;
+  padding-block: calc(var(--nav-height) + clamp(2rem, 9vw, 5rem)) clamp(2rem, 6vw, 3rem);
+  padding-inline: 0;
   text-align: center;
 }
 
@@ -451,7 +533,7 @@ html.snap-page {
   align-content: center;
   position: relative;
   overflow: hidden;
-  padding: calc(var(--nav-height) + 2rem) var(--grid-margin) calc(var(--nav-height) + 1.5rem);
+  padding: calc(var(--nav-height) + 2rem) var(--gutter) calc(var(--nav-height) + 1.5rem);
 }
 
 .slide--dark {
@@ -498,7 +580,7 @@ html.snap-page {
 .slide-home__logo {
   grid-column: 4 / 10;
   justify-self: center;
-  width: min(320px, 100%);
+  width: min(20rem, 82%);
   position: relative;
   z-index: 2;
 }
@@ -519,6 +601,7 @@ html.snap-page {
   grid-column: 2 / 5;
   grid-row: 2;
   align-self: start;
+  justify-self: start;
   font-family: var(--font-ui);
   display: inline-flex;
   align-items: center;
@@ -555,39 +638,54 @@ html.snap-page {
   overflow: hidden;
 }
 
-@media (max-width: 860px) {
-  .slide-home__logo {
-    grid-column: 2 / 12;
+/* Below md the snap slides drop the 12-column grid entirely: content stacks
+   in one full-width column, so the hand-picked desktop `grid-column` spans
+   (which otherwise squeeze e.g. the About button into 3 narrow columns) are
+   neutralised. */
+@media (max-width: 47.99rem) {
+  .slide {
+    grid-template-columns: 1fr;
+    column-gap: 0;
   }
 
+  .slide-home__logo,
+  .slide-statement__heading,
+  .btn-dark-outline,
+  .slide-events__heading,
+  .slide-events__list {
+    grid-column: 1;
+    grid-row: auto;
+    align-self: auto;
+  }
+
+  .slide-statement__heading {
+    margin-bottom: var(--space-m);
+  }
+
+  .btn-dark-outline {
+    justify-self: start;
+    width: auto;
+  }
+}
+
+@media (min-width: 48rem) and (max-width: 860px) {
+  .slide-home__logo,
   .slide-statement__heading,
   .slide-events__heading {
     grid-column: 2 / 12;
   }
-
-  .btn-dark-outline {
-    grid-column: 2 / 9;
-  }
 }
 
-.event-pill {
-  background: var(--accent);
-  border-radius: 28px;
-  padding: clamp(0.9rem, 2vw, 1.3rem) clamp(1.25rem, 3vw, 1.9rem);
+/* Homepage teaser reuses the .show-list component from the Shows page,
+   just with tighter row padding so a few fit inside the snap slide. */
+
+.slide-events__list .show {
+  padding: clamp(1rem, 2.4vw, 1.6rem) 0;
 }
 
-.event-pill__title {
-  font-family: var(--font-ui);
-  color: var(--surface);
-  font-size: clamp(1rem, 2vw, 1.2rem);
-  margin-bottom: 0.3rem;
-}
-
-.event-pill__meta {
-  font-family: var(--font-ui);
-  color: var(--surface);
-  font-size: 0.85rem;
-  opacity: 0.8;
+.slide-events__all {
+  align-self: start;
+  margin-top: clamp(1.25rem, 3vw, 2rem);
 }
 
 /* Mini footer bar (fixed, used on the scroll-snap homepage) ------------- */
@@ -769,7 +867,8 @@ body[data-theme="light"] .mini-footer__social a {
 .show {
   display: grid;
   grid-template-columns: 7rem 1fr auto;
-  align-items: center;
+  /* Align the venue name to the date's first baseline. */
+  align-items: baseline;
   gap: 1.5rem;
   padding: 1.75rem 0;
   border-bottom: 1px solid var(--line);
@@ -778,17 +877,18 @@ body[data-theme="light"] .mini-footer__social a {
 .show__date {
   font-family: var(--font-body);
   color: var(--accent);
-  line-height: 1.1;
 }
 
 .show__date .day {
   display: block;
-  font-size: 2rem;
+  font-size: 1.5rem;
+  line-height: 1.3;
 }
 
 .show__date .month {
   display: block;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
+  line-height: 1.2;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--text-muted);
@@ -797,14 +897,21 @@ body[data-theme="light"] .mini-footer__social a {
 
 .show__info h3 {
   font-size: 1.2rem;
+  line-height: 1.3;
   text-transform: none;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.35rem;
 }
 
 .show__info p {
   color: var(--text-muted);
   opacity: 0.7;
   font-size: 0.9rem;
+  line-height: 1.2;
+}
+
+/* Keep the Tickets button optically centred against the two text lines. */
+.show .btn {
+  align-self: center;
 }
 
 @media (max-width: 640px) {
@@ -1045,5 +1152,27 @@ html:not(.snap-page) main {
   .footer__social {
     grid-column: 1 / -1;
     justify-self: center;
+  }
+}
+
+/* ==========================================================================
+   Interactive film grain overlay (see js/grain.js)
+   ========================================================================== */
+#grain-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 2147483000;
+  opacity: 0.26;
+  mix-blend-mode: overlay;
+  image-rendering: pixelated;
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #grain-overlay {
+    opacity: 0.2;
   }
 }

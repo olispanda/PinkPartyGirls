@@ -1,0 +1,129 @@
+# Decap CMS configuration — https://decapcms.org/docs/configuration-options/
+# Content is stored as JSON in /content and committed straight to Git.
+
+backend:
+  name: git-gateway
+  branch: main
+
+# Lets you run the CMS locally against your working copy:
+#   npm run cms      (starts the proxy on :8081)
+#   npm run dev      (serves the site + /admin)
+# then open http://localhost:3000/admin/
+local_backend: true
+
+media_folder: "Assets/uploads"
+public_folder: "/Assets/uploads"
+
+locale: "de"
+
+site_url: https://pinkpartygirls.netlify.app
+display_url: https://pinkpartygirls.netlify.app
+
+collections:
+  # ------------------------------------------------------------------ #
+  - name: "settings"
+    label: "Einstellungen"
+    delete: false
+    editor: { preview: false }
+    files:
+      - name: "general"
+        label: "Allgemein · Social & Footer"
+        file: "content/settings.json"
+        fields:
+          - { label: "Bandname", name: "band_name", widget: "string" }
+          - { label: "Footer-Text", name: "footer_copy", widget: "string" }
+          - label: "Social Links"
+            name: "social"
+            widget: "list"
+            summary: "{{fields.label}}"
+            fields:
+              - { label: "Name", name: "label", widget: "string" }
+              - { label: "URL", name: "url", widget: "string", hint: "z. B. https://instagram.com/…" }
+
+  # ------------------------------------------------------------------ #
+  - name: "pages"
+    label: "Seiten"
+    delete: false
+    editor: { preview: false }
+    files:
+      - name: "home"
+        label: "Startseite"
+        file: "content/home.json"
+        fields:
+          - { label: "Hero-Video (mp4)", name: "hero_video", widget: "file", required: false }
+          - { label: "Hero-Logo", name: "hero_logo", widget: "file", required: false }
+          - { label: "Aussage / Slogan", name: "statement_heading", widget: "text" }
+          - { label: "Button-Text", name: "statement_button_label", widget: "string" }
+          - { label: "Button-Link", name: "statement_button_link", widget: "string" }
+          - { label: "Events-Überschrift", name: "events_heading", widget: "string", hint: "Die Termine darunter stammen aus dem Reiter Shows – die naechsten 3 werden automatisch angezeigt." }
+
+      - name: "about"
+        label: "About"
+        file: "content/about.json"
+        fields:
+          - { label: "Eyebrow", name: "eyebrow", widget: "string" }
+          - { label: "Titel", name: "title", widget: "string" }
+          - { label: "Lead-Text", name: "lede", widget: "text" }
+          - label: "Bio-Absätze"
+            name: "bio"
+            widget: "list"
+            field: { label: "Absatz", name: "text", widget: "text" }
+          - { label: "Lineup · Eyebrow", name: "lineup_eyebrow", widget: "string" }
+          - { label: "Lineup · Titel", name: "lineup_title", widget: "string" }
+          - label: "Bandmitglieder"
+            name: "members"
+            widget: "list"
+            summary: "{{fields.name}} · {{fields.role}}"
+            fields:
+              - { label: "Name", name: "name", widget: "string" }
+              - { label: "Rolle", name: "role", widget: "string" }
+              - { label: "Foto", name: "photo", widget: "image", required: false }
+          - { label: "Presse-Zitat", name: "quote", widget: "text" }
+          - { label: "Zitat-Quelle", name: "quote_cite", widget: "string" }
+
+      - name: "music"
+        label: "Music"
+        file: "content/music.json"
+        fields:
+          - { label: "Eyebrow", name: "eyebrow", widget: "string" }
+          - { label: "Titel", name: "title", widget: "string" }
+          - { label: "Lead-Text", name: "lede", widget: "text" }
+          - label: "Releases"
+            name: "releases"
+            widget: "list"
+            summary: "{{fields.title}} · {{fields.type}} {{fields.year}}"
+            fields:
+              - { label: "Titel", name: "title", widget: "string" }
+              - { label: "Typ", name: "type", widget: "select", options: ["Single", "EP", "Album"] }
+              - { label: "Jahr", name: "year", widget: "string" }
+              - { label: "Cover", name: "cover", widget: "image", required: false }
+              - { label: "Spotify-Link", name: "spotify", widget: "string", required: false }
+              - { label: "Apple-Music-Link", name: "apple", widget: "string", required: false }
+              - { label: "YouTube-Link", name: "youtube", widget: "string", required: false }
+
+      - name: "shows"
+        label: "Shows"
+        file: "content/shows.json"
+        fields:
+          - { label: "Eyebrow", name: "eyebrow", widget: "string" }
+          - { label: "Titel", name: "title", widget: "string" }
+          - { label: "Lead-Text", name: "lede", widget: "text" }
+          - label: "Konzerte"
+            name: "shows"
+            widget: "list"
+            summary: "{{fields.date}} · {{fields.title}}"
+            fields:
+              - { label: "Datum", name: "date", widget: "datetime", date_format: "DD.MM.YYYY", time_format: false, format: "YYYY-MM-DD" }
+              - { label: "Venue / Stadt", name: "title", widget: "string" }
+              - { label: "Adresse", name: "location", widget: "string" }
+              - { label: "Ticket-Link", name: "tickets_url", widget: "string", required: false }
+
+      - name: "contact"
+        label: "Contact"
+        file: "content/contact.json"
+        fields:
+          - { label: "Eyebrow", name: "eyebrow", widget: "string" }
+          - { label: "Titel", name: "title", widget: "string" }
+          - { label: "Lead-Text", name: "lede", widget: "text" }
+          - { label: "Booking-E-Mail", name: "booking_email", widget: "string" }
+          - { label: "Presse-E-Mail", name: "press_email", widget: "string" }

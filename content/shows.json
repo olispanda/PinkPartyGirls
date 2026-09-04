@@ -1,0 +1,11 @@
+{
+  "eyebrow": "Live",
+  "title": "Tour Dates",
+  "lede": "Placeholder header copy — where to catch Pink Party Girls next.",
+  "shows": [
+    { "date": "2026-09-14", "title": "Venue Name — City", "location": "Placeholder venue, City, Country", "tickets_url": "#" },
+    { "date": "2026-10-02", "title": "Venue Name — City", "location": "Placeholder venue, City, Country", "tickets_url": "#" },
+    { "date": "2026-10-19", "title": "Venue Name — City", "location": "Placeholder venue, City, Country", "tickets_url": "#" },
+    { "date": "2026-11-07", "title": "Venue Name — City", "location": "Placeholder venue, City, Country", "tickets_url": "#" }
+  ]
+}
