@@ -5,8 +5,16 @@ JSON in [`content/`](content/) und werden im Browser durch [`js/cms.js`](js/cms.
 in die Seiten eingesetzt (das HTML enthält die Inhalte zusätzlich als Fallback).
 
 Bearbeitet wird alles über **[Pages CMS](https://pagescms.org)** – kostenlos,
-gehostet, kein eigener Server, kein Netlify Identity. Jede Speicherung macht einen
-Commit ins Repo `olispanda/PinkPartyGirls`, danach deployt Netlify automatisch neu.
+gehostet, kein eigener Server. Jede Speicherung macht einen Commit ins Repo
+`olispanda/PinkPartyGirls`; **GitHub Pages** deployt die Seite danach automatisch neu.
+
+Drei getrennte Bausteine:
+
+| Rolle | Was |
+|---|---|
+| Quelle | GitHub-Repo `olispanda/PinkPartyGirls` |
+| Editor | Pages CMS (`.pages.yml`) |
+| Hosting | GitHub Pages – liefert die Seite aus, hier hängt die Domain |
 
 ```
 content/settings.json   Bandname, Footer-Text, Social-Links (überall)
@@ -29,8 +37,8 @@ Die Bearbeitungs-Oberfläche ist in [`.pages.yml`](.pages.yml) im Repo-Root defi
 3. Zurück in Pages CMS das Repo `PinkPartyGirls` öffnen.
 4. `.pages.yml` liegt schon im Repo → die Oberfläche erscheint sofort mit den
    Einträgen **Einstellungen / Startseite / About / Music / Shows / Contact**.
-5. Inhalt ändern → **Save**. Fertig – Commit + Netlify-Deploy laufen automatisch,
-   nach ~1 Minute ist es live.
+5. Inhalt ändern → **Save**. Fertig – Commit + GitHub-Pages-Deploy laufen
+   automatisch, nach 1–2 Minuten ist es live.
 
 ### Bandkolleginnen ohne GitHub-Account
 
@@ -44,11 +52,40 @@ Uploads landen automatisch in `Assets/uploads/`. Fürs Hero-Video eine komprimie
 
 ---
 
+## Hosting: GitHub Pages
+
+1. Im Repo **Settings → Pages**.
+2. **Source: Deploy from a branch** → Branch **`main`**, Ordner **`/ (root)`** → **Save**.
+3. Nach 1–2 Min ist die Seite unter `https://olispanda.github.io/PinkPartyGirls/` live.
+4. **Custom Domain** (siehe unten): unter *Settings → Pages → Custom domain* die
+   Domain eintragen → GitHub legt automatisch eine `CNAME`-Datei im Repo an →
+   danach **Enforce HTTPS** aktivieren.
+
+Jeder Commit auf `main` (auch die von Pages CMS) deployt automatisch neu.
+
+## Custom Domain (DNS beim Registrar)
+
+`www.<deine-domain>` als Hauptadresse. Beim Registrar im DNS anlegen:
+
+| Typ | Host | Wert |
+|---|---|---|
+| `CNAME` | `www` | `olispanda.github.io` |
+| `ALIAS`/`ANAME` | `@` | `olispanda.github.io` |
+
+Wenn der Registrar **kein** ALIAS/ANAME am Root kann, stattdessen **vier A-Records** auf `@`:
+`185.199.108.153`, `185.199.109.153`, `185.199.110.153`, `185.199.111.153`
+
 ## Kontaktformular
 
-Das Formular auf `contact.html` nutzt **Netlify Forms** (`data-netlify="true"`).
-Einsendungen erscheinen im Netlify-Dashboard unter **Forms**. Dort optional eine
-E-Mail-Benachrichtigung einrichten (**Forms → Settings → Form notifications**).
+Das Formular auf `contact.html` läuft über **[Web3Forms](https://web3forms.com)**
+(gratis, kein Account). Einrichten:
+
+1. Auf [web3forms.com](https://web3forms.com) die eigene E-Mail eingeben → Access Key
+   kommt per Mail.
+2. In [`contact.html`](contact.html) `REPLACE_WITH_WEB3FORMS_ACCESS_KEY` durch den
+   Key ersetzen, committen.
+
+Einsendungen kommen dann direkt als E-Mail. Spam-Schutz (Honeypot) ist eingebaut.
 
 ---
 

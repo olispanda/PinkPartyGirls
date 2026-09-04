@@ -4,7 +4,9 @@
 
 media:
   input: Assets/uploads
-  output: /Assets/uploads
+  # Relative path (no leading slash) so uploads resolve correctly whether the
+  # site is served from a domain root or a GitHub Pages project subpath.
+  output: Assets/uploads
   categories: [image, video]
 
 settings:

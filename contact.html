@@ -37,22 +37,28 @@
 
   <section style="padding-top:0;">
     <div class="container contact-grid">
-      <form name="contact" method="POST" data-netlify="true" netlify-honeypot="bot-field">
-        <input type="hidden" name="form-name" value="contact" />
-        <p hidden><label>Don't fill this out: <input name="bot-field" /></label></p>
+      <!-- Contact form via Web3Forms (https://web3forms.com) — free, no account
+           dashboard needed. Get an access key by entering your email at
+           web3forms.com, then paste it into the access_key field below. -->
+      <form id="contact-form" action="https://api.web3forms.com/submit" method="POST">
+        <input type="hidden" name="access_key" value="REPLACE_WITH_WEB3FORMS_ACCESS_KEY" />
+        <input type="hidden" name="subject" value="Neue Nachricht über die Pink Party Girls Website" />
+        <input type="hidden" name="from_name" value="Pink Party Girls Website" />
+        <input type="checkbox" name="botcheck" tabindex="-1" autocomplete="off" style="display:none" aria-hidden="true" />
         <div class="form-field">
           <label for="name">Name</label>
-          <input type="text" id="name" name="name" placeholder="Your name" />
+          <input type="text" id="name" name="name" placeholder="Your name" required />
         </div>
         <div class="form-field">
           <label for="email">Email</label>
-          <input type="email" id="email" name="email" placeholder="you@example.com" />
+          <input type="email" id="email" name="email" placeholder="you@example.com" required />
         </div>
         <div class="form-field">
           <label for="message">Message</label>
-          <textarea id="message" name="message" rows="6" placeholder="Say something..."></textarea>
+          <textarea id="message" name="message" rows="6" placeholder="Say something..." required></textarea>
         </div>
         <button type="submit" class="btn">Send Message</button>
+        <p id="contact-form__status" role="status" aria-live="polite" hidden></p>
       </form>
 
       <div class="contact-info">
@@ -95,5 +101,41 @@
   <script src="js/main.js"></script>
   <script src="js/cms.js"></script>
   <script src="js/grain.js"></script>
+  <script>
+    // Submit the contact form to Web3Forms via fetch and show an inline
+    // status message. Falls back to a normal POST if fetch/JSON is unavailable.
+    (function () {
+      var form = document.getElementById("contact-form");
+      if (!form || !window.fetch) return;
+      var status = document.getElementById("contact-form__status");
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        var btn = form.querySelector('button[type="submit"]');
+        var data = Object.fromEntries(new FormData(form).entries());
+        btn.disabled = true;
+        status.hidden = false;
+        status.textContent = "Wird gesendet …";
+        fetch("https://api.web3forms.com/submit", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify(data),
+        })
+          .then(function (r) { return r.json(); })
+          .then(function (res) {
+            if (res.success) {
+              form.reset();
+              status.textContent = "Danke! Deine Nachricht ist unterwegs.";
+            } else {
+              status.textContent = "Hat nicht geklappt: " + (res.message || "Bitte später erneut versuchen.");
+              btn.disabled = false;
+            }
+          })
+          .catch(function () {
+            status.textContent = "Netzwerkfehler – bitte später erneut versuchen.";
+            btn.disabled = false;
+          });
+      });
+    })();
+  </script>
 </body>
 </html>
