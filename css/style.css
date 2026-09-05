@@ -1176,3 +1176,100 @@ html:not(.snap-page) main {
     opacity: 0.2;
   }
 }
+
+
+/* ==========================================================================
+   Easter egg: every occurrence of the word "pink" gets a marker-highlight
+   chip (dark text on a solid pink block). Click one to pick your own pink
+   hue — it's saved and reapplied on every visit. See js/pink-egg.js.
+   ========================================================================== */
+
+:root {
+  --pink-word-bg: hsl(340, 71%, 51%);
+}
+
+.pink-word {
+  display: inline-block;
+  background: var(--pink-word-bg);
+  color: var(--surface);
+  padding: 0.02em 0.32em 0.06em;
+  margin-inline: 0.03em;
+  border-radius: 3px;
+  box-shadow: 0 0 0 2px rgba(9, 8, 9, 0.3);
+  transform: rotate(-1deg);
+  cursor: pointer;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  transition: transform 0.2s var(--ease-out, ease), box-shadow 0.2s ease;
+}
+
+.pink-word:nth-of-type(even) {
+  transform: rotate(0.8deg);
+}
+
+.pink-word:hover,
+.pink-word:focus-visible {
+  transform: rotate(0deg) translateY(-1px) scale(1.03);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(9, 8, 9, 0.3);
+  outline: none;
+}
+
+.pink-picker {
+  position: absolute;
+  z-index: 500;
+  width: 232px;
+  background: var(--surface-card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1rem 1.15rem 1.15rem;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.55);
+  font-family: var(--font-ui);
+  color: var(--text);
+  animation: pink-picker-in 0.16s var(--ease-out, ease) both;
+}
+
+@keyframes pink-picker-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.97);
+  }
+}
+
+.pink-picker__label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
+  margin-bottom: 0.75rem;
+}
+
+.pink-picker__row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.pink-picker__swatch {
+  width: 22px;
+  height: 22px;
+  flex: none;
+  border-radius: 50%;
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.pink-picker input[type="range"] {
+  flex: 1;
+  accent-color: var(--pink-word-bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pink-word {
+    transition: none;
+  }
+  .pink-picker {
+    animation: none;
+  }
+}
