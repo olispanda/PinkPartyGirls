@@ -1249,6 +1249,14 @@ html:not(.snap-page) main {
   }
 }
 
+/* Same texture, toned down on phones — at arm's length and on small,
+   dense screens the full-strength grain reads as noisy rather than filmic. */
+@media (max-width: 640px) {
+  #grain-overlay {
+    opacity: 0.22;
+  }
+}
+
 /* ==========================================================================
    Micro-animations
    Small, consistent motion: one easing curve, short durations, everything
