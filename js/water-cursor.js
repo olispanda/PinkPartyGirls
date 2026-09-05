@@ -60,6 +60,10 @@
      that isn't quite even, so the map gets a little standing-wave structure:
      two angular terms and one radial ripple, all small enough to keep the
      magnification intact. This is most of what makes it look wet. */
+  var FILM_RES = 200; // interference texture resolution
+  var FILM_ALPHA = 0.3; // ceiling on how strongly the film shows
+  var FILM_HUE_SWING = 44; // degrees either side of --accent the colour roams
+
   var WAVE_ANG_1 = 0.075;
   var WAVE_ANG_2 = 0.045;
   var WAVE_RAD = 0.05;
@@ -99,6 +103,188 @@
   if (!hasBackdrop) return; // no glass of any kind — leave the native cursor alone
 
   var SVG_NS = "http://www.w3.org/2000/svg";
+
+  /* ---- interference texture ---------------------------------------------
+     Soap film is not a set of concentric rings. It is a marbled, chaotic
+     field — the wall drifts and varies in thickness, and colour follows
+     thickness — so drawing it with tidy radial gradients is what made the
+     drop look illustrated. This paints value noise instead, a few octaves
+     of it, and maps the result through a palette centred on the site's
+     accent hue.
+
+     The radial falloff lives in the texture's own alpha channel rather than
+     a CSS mask: a mask in this subtree would cut the neighbouring lens off
+     from the page and kill the refraction outright.                       */
+  function mulberry32(seed) {
+    return function () {
+      seed |= 0;
+      seed = (seed + 0x6d2b79f5) | 0;
+      var t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  // Value noise: a random lattice with smoothstep interpolation between the
+  // corners. Cheap, and smooth enough to read as fluid rather than grain.
+  function latticeNoise(cells, rnd) {
+    var g = [];
+    for (var i = 0; i <= cells; i++) {
+      g[i] = [];
+      for (var j = 0; j <= cells; j++) g[i][j] = rnd();
+    }
+    return function (x, y) {
+      var fx = x * cells;
+      var fy = y * cells;
+      var x0 = Math.min(cells - 1, Math.floor(fx));
+      var y0 = Math.min(cells - 1, Math.floor(fy));
+      var tx = fx - x0;
+      var ty = fy - y0;
+      var sx = tx * tx * (3 - 2 * tx);
+      var sy = ty * ty * (3 - 2 * ty);
+      var a = g[x0][y0];
+      var b = g[x0 + 1][y0];
+      var c = g[x0][y0 + 1];
+      var d = g[x0 + 1][y0 + 1];
+      return (a * (1 - sx) + b * sx) * (1 - sy) + (c * (1 - sx) + d * sx) * sy;
+    };
+  }
+
+  function hslToRgb(h, s, l) {
+    h = ((h % 360) + 360) % 360 / 360;
+    var q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    var p = 2 * l - q;
+    function ch(t) {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    }
+    return [ch(h + 1 / 3) * 255, ch(h) * 255, ch(h - 1 / 3) * 255];
+  }
+
+  // Reads whatever --accent currently is (hex, hsl(), anything) by letting
+  // the canvas parse it, then converts to a hue we can swing around.
+  function accentHue() {
+    var probe = document.createElement("canvas");
+    probe.width = probe.height = 1;
+    var pc = probe.getContext("2d");
+    var value = "";
+    try {
+      value = getComputedStyle(document.documentElement)
+        .getPropertyValue("--accent")
+        .trim();
+    } catch (e) {
+      /* fall through to the default below */
+    }
+    if (!pc || !value) return 340;
+    pc.fillStyle = "#db2763";
+    pc.fillStyle = value;
+    pc.fillRect(0, 0, 1, 1);
+    var d = pc.getImageData(0, 0, 1, 1).data;
+    var r = d[0] / 255;
+    var g = d[1] / 255;
+    var b = d[2] / 255;
+    var mx = Math.max(r, g, b);
+    var mn = Math.min(r, g, b);
+    if (mx === mn) return 340;
+    var dd = mx - mn;
+    var h;
+    if (mx === r) h = ((g - b) / dd) % 6;
+    else if (mx === g) h = (b - r) / dd + 2;
+    else h = (r - g) / dd + 4;
+    return ((h * 60) % 360 + 360) % 360;
+  }
+
+  function buildFilmTexture(seed, hue) {
+    var N = FILM_RES;
+    var c = document.createElement("canvas");
+    c.width = c.height = N;
+    var cx = c.getContext("2d");
+    if (!cx) return null;
+
+    var rnd = mulberry32(seed);
+    var n1 = latticeNoise(4, rnd); // broad swirls
+    var n2 = latticeNoise(9, rnd); // finer marbling
+    var n3 = latticeNoise(19, rnd); // the last bit of detail
+    var nA = latticeNoise(6, rnd); // separate field for density
+
+    var img = cx.createImageData(N, N);
+    var d = img.data;
+    var half = N / 2;
+
+    for (var y = 0; y < N; y++) {
+      for (var x = 0; x < N; x++) {
+        var i = (y * N + x) * 4;
+        var u = x / N;
+        var v = y / N;
+        var nx = (x + 0.5 - half) / half;
+        var ny = (y + 0.5 - half) / half;
+        var r = Math.sqrt(nx * nx + ny * ny);
+
+        if (r >= 1) {
+          d[i + 3] = 0;
+          continue;
+        }
+
+        var n = 0.5 * n1(u, v) + 0.32 * n2(u, v) + 0.18 * n3(u, v);
+
+        // Thickness → colour. Cycling the hue through a sine is what puts the
+        // colour in bands the way interference does; a few turns across the
+        // noise range gives several bands rather than one smooth sweep, and
+        // holding the swing near the accent keeps the drop pink, not rainbow.
+        var h = hue + Math.sin(n * Math.PI * 3.6 + 0.6) * FILM_HUE_SWING;
+        var sat = 0.66 + 0.3 * Math.sin(n * Math.PI * 4.4);
+        // Deliberately dark. Bright film turns the drop milky; on the
+        // reference the swirls sit only a little above the background and
+        // read as tinted glass rather than paint.
+        var lig = 0.38 + 0.2 * Math.sin(n * Math.PI * 2.6 + 1.2);
+        var rgb = hslToRgb(h, Math.max(0.3, Math.min(0.98, sat)), Math.max(0.16, Math.min(0.62, lig)));
+
+        // A bubble wall shows more colour toward the rim, where the line of
+        // sight passes through more of it, and the very edge fades out so the
+        // texture never draws a hard ring.
+        var inner = (r - 0.22) / 0.6;
+        inner = inner <= 0 ? 0 : inner >= 1 ? 1 : inner * inner * (3 - 2 * inner);
+        var outer = (1 - r) / 0.09;
+        outer = outer <= 0 ? 0 : outer >= 1 ? 1 : outer * outer * (3 - 2 * outer);
+        // Banding in the opacity as well as the colour. Interference reads as
+        // distinct fringes, not an even haze, and letting the gaps go thin
+        // is what separates them.
+        var density = (0.3 + 0.7 * nA(u, v)) * (0.45 + 0.55 * Math.abs(Math.sin(n * Math.PI * 3.2)));
+
+        d[i] = rgb[0];
+        d[i + 1] = rgb[1];
+        d[i + 2] = rgb[2];
+        d[i + 3] = 255 * inner * outer * density * FILM_ALPHA;
+      }
+    }
+
+    cx.putImageData(img, 0, 0);
+    try {
+      return c.toDataURL("image/png");
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /* Two textures at this resolution is a few dozen milliseconds of pixel
+     work, which has no business on the critical path — the drop is invisible
+     until the pointer first moves anyway. Idle time, or a short delay where
+     that isn't available. */
+  function paintFilm() {
+    var run = function () {
+      var hue = accentHue();
+      var a = buildFilmTexture(0x5eed, hue);
+      var b = buildFilmTexture(0x1d0c, hue + 12);
+      if (a) root.style.setProperty("--wc-film-a", 'url("' + a + '")');
+      if (b) root.style.setProperty("--wc-film-b", 'url("' + b + '")');
+    };
+    if (window.requestIdleCallback) window.requestIdleCallback(run, { timeout: 1200 });
+    else setTimeout(run, 120);
+  }
 
   /* ---- displacement map -------------------------------------------------
      Red channel drives the horizontal sample offset, green the vertical;
@@ -315,6 +501,10 @@
     root.style.setProperty("--wc-size", SIZE + "px");
     root.style.setProperty("--wc-sat-size", SAT_SIZE + "px");
     document.body.appendChild(root);
+    paintFilm();
+    // The hue picker (js/pink-egg.js) recolours --accent; the texture is
+    // already rasterised by then, so it has to be repainted.
+    document.addEventListener("ppg:accent-change", paintFilm);
     var mapURL = canRefract ? buildMap() : null;
     if (mapURL) {
       mapCache = mapURL; // kept so a later step-down doesn't rebuild it

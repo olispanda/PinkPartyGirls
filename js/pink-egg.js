@@ -41,6 +41,13 @@
     // it, so shift it with a matching hue-rotate filter instead (see
     // .slide-home__logo in style.css).
     document.documentElement.style.setProperty("--logo-hue-rotate", (hue - DEFAULT_HUE) + "deg");
+    // Anything that rasterises the accent colour rather than reading the
+    // variable live has to redraw — the water cursor's film texture does.
+    try {
+      document.dispatchEvent(new CustomEvent("ppg:accent-change", { detail: { hue: hue } }));
+    } catch (e) {
+      /* CustomEvent unavailable — the colour still applies everywhere else */
+    }
     try {
       localStorage.setItem(STORAGE_KEY, hue);
     } catch (e) {
