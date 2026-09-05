@@ -171,15 +171,16 @@ p {
 }
 
 /* 12-column grid ---------------------------------------------------------
-   12px margin, 20px gutter, full viewport width. Use .grid-12 as the
-   layout container and .col-start-N / .col-span-N to place children. */
+   Side padding matches --gutter (the page content inset) so nav brand and
+   footer marks line up with the content column. 20px gutter between tracks.
+   Use .grid-12 as the layout container and .col-start-N / .col-span-N. */
 
 .grid-12 {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   column-gap: var(--grid-gutter);
   width: 100%;
-  padding-inline: var(--grid-margin);
+  padding-inline: var(--gutter);
 }
 
 .col-span-1  { grid-column: span 1; }
@@ -331,6 +332,13 @@ section {
   flex-wrap: nowrap;
   align-items: center;
   background: transparent;
+  /* Difference blend on the whole bar: the brand mark and the menu invert
+     against whatever scrolls behind them — pink over the dark slides, black
+     over the pink slide — with a smooth per-pixel transition at each edge.
+     Must sit on .nav itself (not the children): .nav is a fixed stacking
+     context, so a child's blend would have nothing behind it to react to.
+     Replaces the old body[data-theme] colour swap for the nav. */
+  mix-blend-mode: difference;
 }
 
 .nav__inner {
@@ -345,13 +353,12 @@ section {
   font-size: 32px;
   line-height: 1;
   color: var(--accent);
-  opacity: 0.75;
-  transition: opacity 0.2s ease, color 0.3s ease;
+  transition: transform 0.2s ease;
 }
 
 .nav__brand:hover,
 .nav__brand.is-active {
-  opacity: 1;
+  transform: scale(1.08);
 }
 
 .nav__links {
@@ -368,14 +375,29 @@ section {
   position: relative;
   padding: 0.35rem 0;
   color: var(--accent);
-  opacity: 0.75;
-  transition: opacity 0.2s ease, color 0.3s ease;
 }
 
-.nav__links a:hover,
-.nav__links a.is-active {
-  opacity: 1;
+/* Hover / current page: a thin underline rather than an opacity shift, so the
+   difference blend below stays crisp (opacity < 1 would mix the backdrop
+   back in and muddy the invert). */
+.nav__links a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.2s ease;
 }
+
+.nav__links a:hover::after,
+.nav__links a.is-active::after {
+  transform: scaleX(1);
+}
+
 
 .nav__toggle {
   display: none;
@@ -398,19 +420,6 @@ section {
   height: 2px;
   background: var(--accent);
   transition: transform 0.25s ease, opacity 0.25s ease, background 0.3s ease;
-}
-
-/* Theme-adaptive nav (used on the scroll-snap homepage) ---------------- */
-
-body[data-theme="light"] .nav__brand,
-body[data-theme="light"] .nav__links a {
-  color: var(--surface);
-}
-
-body[data-theme="light"] .nav__toggle span,
-body[data-theme="light"] .nav__toggle::before,
-body[data-theme="light"] .nav__toggle::after {
-  background: var(--surface);
 }
 
 .nav__toggle::before {
@@ -467,6 +476,12 @@ body.nav-open .nav__toggle::after {
     opacity: 1;
     pointer-events: auto;
   }
+
+  /* Full-screen menu open: drop the difference blend so the solid panel and
+     its pink links render normally instead of inverting against the slide. */
+  body.nav-open .nav {
+    mix-blend-mode: normal;
+  }
 }
 
 /* Hero ------------------------------------------------------------------ */
@@ -515,25 +530,44 @@ body.nav-open .nav__toggle::after {
 /* Scroll-snap homepage --------------------------------------------------- */
 
 html.snap-page {
-  scroll-snap-type: y mandatory;
+  /* proximity (not mandatory) on phones: a slide that is taller than the
+     screen can still be scrolled through and paused mid-way. */
+  scroll-snap-type: y proximity;
+}
+
+@media (min-width: 64rem) {
+  html.snap-page {
+    scroll-snap-type: y mandatory;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.snap-page {
+    scroll-snap-type: none;
+  }
 }
 
 .slide {
-  height: 100vh;
-  height: 100dvh;
+  /* Fill the screen when the content fits, but GROW past it (and let the
+     page scroll) when it doesn't — a fixed height + overflow:hidden was
+     clipping the events list on short viewports. */
   min-height: 100vh;
-  min-height: 100dvh;
-  max-height: 100vh;
-  max-height: 100dvh;
+  min-height: 100svh;
   scroll-snap-align: start;
-  scroll-snap-stop: always;
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   column-gap: var(--grid-gutter);
-  align-content: center;
+  align-content: safe center;
   position: relative;
-  overflow: hidden;
-  padding: calc(var(--nav-height) + 2rem) var(--gutter) calc(var(--nav-height) + 1.5rem);
+  padding: calc(var(--nav-height) + 1.5rem) var(--gutter);
+}
+
+/* Snap to each slide top, but not so hard that a taller-than-screen slide
+   traps the scroll. */
+@media (min-width: 64rem) {
+  .slide {
+    scroll-snap-stop: always;
+  }
 }
 
 .slide--dark {
@@ -552,6 +586,7 @@ html.snap-page {
 
 .slide-home {
   background: var(--surface);
+  overflow: hidden; /* clip the absolutely-positioned video / gradient wash */
 }
 
 .slide-home__bg {
@@ -583,6 +618,31 @@ html.snap-page {
   width: min(20rem, 82%);
   position: relative;
   z-index: 2;
+  transition: opacity 0.6s ease;
+}
+
+/* Metallic 3D version of the wordmark, layered over the flat SVG and faded
+   in once three.js has built + rendered it (see js/logo3d.js). If WebGL is
+   unavailable or the module fails to load, the flat SVG simply stays. */
+.slide-home__logo3d {
+  position: absolute;
+  left: 50%;
+  top: 47%;
+  transform: translate(-50%, -50%);
+  width: min(34rem, 92vw);
+  aspect-ratio: 1 / 1;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.slide-home.is-3d .slide-home__logo3d {
+  opacity: 1;
+}
+
+.slide-home.is-3d .slide-home__logo {
+  opacity: 0;
 }
 
 .slide-statement__heading {
@@ -635,7 +695,6 @@ html.snap-page {
   display: flex;
   flex-direction: column;
   gap: clamp(0.75rem, 2vw, 1.1rem);
-  overflow: hidden;
 }
 
 /* Below md the snap slides drop the 12-column grid entirely: content stacks
@@ -697,6 +756,10 @@ html.snap-page {
   height: var(--nav-height);
   display: flex;
   align-items: center;
+  /* Same trick as .nav: invert per-pixel against whatever scrolls behind it
+     (pink over the dark slides, black over the pink slide, and always
+     legible over the hero video) instead of a manual light/dark swap. */
+  mix-blend-mode: difference;
 }
 
 .mini-footer .grid-12 {
@@ -708,7 +771,6 @@ html.snap-page {
   font-family: var(--font-ui);
   font-size: 0.85rem;
   color: var(--accent);
-  transition: color 0.3s ease;
 }
 
 .mini-footer__mark {
@@ -718,7 +780,6 @@ html.snap-page {
   line-height: 1;
   color: var(--accent);
   justify-self: center;
-  transition: color 0.3s ease;
 }
 
 .mini-footer__social {
@@ -740,25 +801,35 @@ html.snap-page {
   opacity: 1;
 }
 
-body[data-theme="light"] .mini-footer__copy,
-body[data-theme="light"] .mini-footer__mark,
-body[data-theme="light"] .mini-footer__social a {
-  color: var(--surface);
-}
+/* Mobile & tablet: the homepage footer bar stops being fixed and simply
+   follows the last slide at the end of the page, with everything stacked
+   and centred. */
+@media (max-width: 63.99rem) {
+  .mini-footer {
+    position: static;
+    height: auto;
+    padding-block: clamp(2.5rem, 9vw, 4rem);
+  }
 
-@media (max-width: 640px) {
   .mini-footer .grid-12 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    text-align: center;
+  }
+
+  .mini-footer__copy,
+  .mini-footer__mark,
+  .mini-footer__social {
+    display: flex;
+    justify-self: auto;
+  }
+
+  .mini-footer__social {
+    flex-wrap: wrap;
     justify-content: center;
-  }
-
-  .mini-footer__social,
-  .mini-footer__copy {
-    display: none;
-  }
-
-  .mini-footer__mark {
-    grid-column: 1 / -1;
-    justify-self: center;
+    gap: 0.75rem 1.5rem;
   }
 }
 
@@ -867,11 +938,14 @@ body[data-theme="light"] .mini-footer__social a {
 .show {
   display: grid;
   grid-template-columns: 7rem 1fr auto;
-  /* Align the venue name to the date's first baseline. */
-  align-items: baseline;
+  align-items: start;
   gap: 1.5rem;
   padding: 1.75rem 0;
   border-bottom: 1px solid var(--line);
+  /* Shared first-line box: the day number and the venue name both sit in a
+     row of this height regardless of their font size, so their second lines
+     (month ↔ address) land on the same baseline. */
+  --show-lead: 1.9rem;
 }
 
 .show__date {
@@ -882,7 +956,7 @@ body[data-theme="light"] .mini-footer__social a {
 .show__date .day {
   display: block;
   font-size: 1.5rem;
-  line-height: 1.3;
+  line-height: var(--show-lead);
 }
 
 .show__date .month {
@@ -897,9 +971,9 @@ body[data-theme="light"] .mini-footer__social a {
 
 .show__info h3 {
   font-size: 1.2rem;
-  line-height: 1.3;
+  line-height: var(--show-lead);
   text-transform: none;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0;
 }
 
 .show__info p {
@@ -1101,6 +1175,23 @@ html:not(.snap-page) main {
   padding-bottom: var(--nav-height);
 }
 
+/* Mobile & tablet: drop the fixed footer bar and let it sit at the end of
+   the page in normal flow. */
+@media (max-width: 63.99rem) {
+  .footer {
+    position: static;
+    height: auto;
+    padding-block: clamp(2.5rem, 8vw, 4rem);
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  html:not(.snap-page) main {
+    padding-bottom: 0;
+  }
+}
+
 .footer__inner {
   align-items: center;
 }
@@ -1140,7 +1231,7 @@ html:not(.snap-page) main {
   opacity: 1;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 63.99rem) {
   .footer__inner {
     justify-items: center;
     text-align: center;
@@ -1152,6 +1243,12 @@ html:not(.snap-page) main {
   .footer__social {
     grid-column: 1 / -1;
     justify-self: center;
+  }
+
+  .footer__social {
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.75rem 1.5rem;
   }
 }
 
@@ -1177,6 +1274,236 @@ html:not(.snap-page) main {
   }
 }
 
+/* ==========================================================================
+   Micro-animations
+   Small, consistent motion: one easing curve, short durations, everything
+   opt-out under prefers-reduced-motion. Reveal-on-scroll is progressive —
+   without JS the .reveal styles never apply (html.js-anim gate).
+   ========================================================================== */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --dur-1: 0.16s;
+  --dur-2: 0.3s;
+  --dur-3: 0.55s;
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--surface);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* --- Scroll reveal --------------------------------------------------- */
+
+html.js-anim .reveal {
+  opacity: 0;
+}
+
+/* Safety net set by js/anim.js after a timeout — never leave content hidden. */
+html.anim-safe .reveal {
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+html.js-anim .reveal.is-in {
+  opacity: 1;
+  animation: ppg-reveal var(--dur-3) var(--ease-out) backwards;
+  animation-delay: calc(var(--stagger, 0) * 55ms);
+}
+
+@keyframes ppg-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+}
+
+/* --- Page-load intro ----------------------------------------------- */
+
+@keyframes ppg-drop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}
+
+@keyframes ppg-logo-in {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+}
+
+.nav__inner > * {
+  animation: ppg-drop-in var(--dur-3) var(--ease-out) backwards;
+}
+.nav__brand { animation-delay: 0.08s; }
+.nav__links,
+.nav__toggle { animation-delay: 0.16s; }
+
+.slide-home__logo {
+  animation:
+    ppg-logo-in 0.7s var(--ease-out) backwards,
+    ppg-float 7s ease-in-out 0.7s infinite;
+}
+
+@keyframes ppg-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+/* --- Button feedback --------------------------------------------------- */
+
+.btn { will-change: transform; }
+
+.btn:active,
+.btn-dark-outline:active,
+.slide-events__all:active {
+  transform: translateY(0) scale(0.96);
+  transition-duration: var(--dur-1);
+}
+
+.btn::after,
+.btn-dark-outline::after {
+  transition: transform var(--dur-2) var(--ease-spring);
+}
+
+/* --- Card hover ------------------------------------------------------- */
+
+.card__art {
+  transition: transform var(--dur-3) var(--ease-out);
+}
+.card:hover .card__art {
+  transform: scale(1.05);
+}
+.card__body h3 {
+  transition: color var(--dur-1) ease;
+}
+.card:hover .card__body h3 {
+  color: var(--accent);
+}
+
+/* --- Show rows ------------------------------------------------------- */
+
+.show {
+  transition: background var(--dur-2) var(--ease-out);
+}
+.show:hover {
+  background: var(--accent-soft);
+}
+.show__date .day {
+  transition: transform var(--dur-2) var(--ease-spring);
+}
+.show:hover .show__date .day {
+  transform: translateX(4px);
+}
+.show__info h3 {
+  transition: color var(--dur-1) ease;
+}
+.show:hover .show__info h3 {
+  color: var(--accent);
+}
+
+/* --- Band members ------------------------------------------------- */
+
+.member__photo {
+  transition: transform var(--dur-2) var(--ease-out), border-color var(--dur-2) ease;
+}
+.member:hover .member__photo {
+  transform: translateY(-5px);
+  border-color: var(--accent);
+}
+
+/* --- Social links ------------------------------------------------- */
+
+.social-list a,
+.footer__social a,
+.mini-footer__social a {
+  transition: opacity var(--dur-1) ease, transform var(--dur-2) var(--ease-spring);
+  will-change: transform;
+}
+.social-list a:hover,
+.footer__social a:hover,
+.mini-footer__social a:hover {
+  transform: translateY(-3px);
+}
+
+/* --- Forms ------------------------------------------------------- */
+
+.form-field input,
+.form-field textarea {
+  transition: border-color var(--dur-2) ease, box-shadow var(--dur-2) ease, background var(--dur-2) ease;
+}
+.form-field input:focus,
+.form-field textarea:focus {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.form-field label {
+  transition: color var(--dur-1) ease, opacity var(--dur-1) ease;
+}
+.form-field:focus-within label {
+  color: var(--accent);
+  opacity: 1;
+}
+
+/* --- Grain overlay: fade in on load -------------------------------- */
+
+@keyframes ppg-grain-in {
+  from { opacity: 0; }
+}
+#grain-overlay {
+  animation: ppg-grain-in 1.2s ease 0.3s backwards;
+}
+
+/* --- Parallax (js/parallax.js sets --py per element) --------------- */
+
+[data-parallax] {
+  translate: 0 var(--py, 0px);
+}
+
+/* The hero video is oversized so the parallax shift never exposes an edge. */
+.slide-home__video[data-parallax] {
+  top: -9%;
+  bottom: auto;
+  height: 118%;
+  will-change: translate;
+}
+.slide-home__logo[data-parallax] {
+  will-change: translate;
+}
+
+/* --- Reduced motion: stop all of the above ------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  html.js-anim .reveal,
+  html.js-anim .reveal.is-in {
+    opacity: 1;
+    animation: none;
+  }
+
+  .nav__inner > *,
+  .slide-home__logo,
+  #grain-overlay {
+    animation: none;
+  }
+
+  .card:hover .card__art,
+  .show:hover .show__date .day,
+  .member:hover .member__photo,
+  .social-list a:hover,
+  .footer__social a:hover,
+  .mini-footer__social a:hover,
+  .btn:active,
+  .btn-dark-outline:active {
+    transform: none;
+  }
+}
 
 /* ==========================================================================
    Easter egg: every occurrence of the word "pink" gets a marker-highlight

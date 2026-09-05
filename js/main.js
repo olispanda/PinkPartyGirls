@@ -14,22 +14,8 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  var slides = document.querySelectorAll(".slide[data-theme]");
-
-  if (slides.length) {
-    var observer = new IntersectionObserver(
-      function (entries) {
-        entries.forEach(function (entry) {
-          if (entry.isIntersecting && entry.intersectionRatio > 0.5) {
-            document.body.dataset.theme = entry.target.dataset.theme;
-          }
-        });
-      },
-      { threshold: [0.5] }
-    );
-
-    slides.forEach(function (slide) {
-      observer.observe(slide);
-    });
-  }
+  // Note: this used to track the active slide's theme on document.body so
+  // CSS could swap the nav/footer colour per section. Both now use
+  // mix-blend-mode: difference instead (see .nav / .mini-footer in
+  // style.css), which reacts per-pixel without any JS bookkeeping.
 });

@@ -70,7 +70,6 @@
     if (!data) return;
     var header = document.querySelector(".page-header");
     if (header) {
-      fill(".eyebrow", data.eyebrow, header);
       fill(".section-title", data.title, header);
       fill(".section-lede", data.lede, header);
     }

@@ -52,7 +52,6 @@ content:
     path: content/about.json
     format: json
     fields:
-      - { name: eyebrow, label: Eyebrow, type: string }
       - { name: title, label: Titel, type: string }
       - { name: lede, label: Lead-Text, type: text }
       - name: bio
@@ -81,7 +80,6 @@ content:
     path: content/music.json
     format: json
     fields:
-      - { name: eyebrow, label: Eyebrow, type: string }
       - { name: title, label: Titel, type: string }
       - { name: lede, label: Lead-Text, type: text }
       - name: releases
@@ -110,7 +108,6 @@ content:
     path: content/shows.json
     format: json
     fields:
-      - { name: eyebrow, label: Eyebrow, type: string }
       - { name: title, label: Titel, type: string }
       - { name: lede, label: Lead-Text, type: text }
       - name: shows
@@ -136,7 +133,6 @@ content:
     path: content/contact.json
     format: json
     fields:
-      - { name: eyebrow, label: Eyebrow, type: string }
       - { name: title, label: Titel, type: string }
       - { name: lede, label: Lead-Text, type: text }
       - { name: booking_email, label: Booking-E-Mail, type: string }
