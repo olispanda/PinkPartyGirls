@@ -40,7 +40,13 @@
      the drop visible, bent and enlarged. */
   var REFRACT = 70; // px of bend at the rim, main drop
   var SAT_REFRACT = 24; // …and for the satellite
-  var ABERRATION = 0.14; // per-channel spread of the refraction (rainbow rim)
+  /* Per-channel spread of the refraction. This has a hard ceiling that has
+     nothing to do with taste: once the red and blue passes separate by more
+     than a stroke width, thin shapes behind the glass stop reading as one
+     edge with a coloured fringe and start reading as two copies of
+     themselves. Navigation labels showed it first — around a tenth was
+     already ghosting them. */
+  var ABERRATION = 0.055;
   /* The shape of a real bead: nearly flat through the middle, so whatever is
      behind it stays sharp and only drifts, then a hard turn in the last
      fifth of the radius that sweeps the surroundings into a compressed band
