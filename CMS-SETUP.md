@@ -56,9 +56,10 @@ Uploads landen automatisch in `Assets/uploads/`. Fürs Hero-Video eine komprimie
 
 ### 1. GitHub Pages aktivieren
 
-Repo → **Settings → Pages** → **Source: Deploy from a branch** → Branch **`main`**,
-Ordner **`/ (root)`** → **Save**. Jeder Commit auf `main` (auch die von Pages CMS)
-deployt danach automatisch neu.
+Repo → **Settings → Pages** → **Source: GitHub Actions** (nicht „Deploy from a
+branch" – der Workflow [`deploy.yml`](.github/workflows/deploy.yml) baut die Seite
+und setzt dabei die Link-Vorschau-Tags ein, siehe unten). Beim ersten Push auf
+`main` läuft der Workflow automatisch einmal durch und die Seite ist live.
 
 Die Datei [`CNAME`](CNAME) im Repo-Root enthält bereits `www.pinkpartygirls.ch` –
 GitHub übernimmt die Domain automatisch, sobald Pages aktiv ist und das DNS steht.
@@ -100,6 +101,32 @@ Das Formular auf `contact.html` läuft über **[Web3Forms](https://web3forms.com
    Key ersetzen, committen.
 
 Einsendungen kommen dann direkt als E-Mail. Spam-Schutz (Honeypot) ist eingebaut.
+
+---
+
+## Link-Vorschau (WhatsApp, iMessage, Facebook, Slack, ...)
+
+Wenn jemand den Link zur Seite verschickt, zeigen die meisten Apps eine kleine
+Karte mit Titel, Beschreibung und Bild – das sind sogenannte
+[Open-Graph-Tags](https://ogp.me). In Pages CMS unter **Einstellungen →
+Link-Vorschau**:
+
+- **Beschreibung** – der Text unter dem Titel in der Vorschau.
+- **Vorschau-Bild** – erscheint als Bild. Empfohlen: **1200×630px, JPG oder PNG**
+  (kein SVG – die meisten Apps rendern kein SVG als Vorschaubild).
+
+Der Titel kommt automatisch von der jeweiligen Seite (z. B. „About — Pink Party
+Girls"). Eine Änderung braucht wie immer nur **Save** in Pages CMS – der Deploy
+setzt die Tags dann automatisch neu ([`scripts/inject-og.mjs`](scripts/inject-og.mjs),
+läuft in [`deploy.yml`](.github/workflows/deploy.yml)).
+
+**Wichtig:** Das passiert beim *Deploy*, nicht im Browser – Link-Vorschauen holen
+sich die Seite ab, ohne JavaScript auszuführen, deshalb reicht `js/cms.js` dafür
+nicht aus.
+
+Testen z. B. mit [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
+oder [opengraph.xyz](https://www.opengraph.xyz) (URL eingeben, „Scrape Again"
+falls eine alte Version gecacht ist).
 
 ---
 

@@ -22,6 +22,16 @@ content:
     fields:
       - { name: band_name, label: Bandname, type: string }
       - { name: footer_copy, label: Footer-Text, type: string }
+      - name: social_preview
+        label: Link-Vorschau (WhatsApp, iMessage, Facebook, ...)
+        type: object
+        fields:
+          - { name: description, label: Beschreibung, type: text }
+          - name: image
+            label: Vorschau-Bild
+            type: image
+            required: false
+            description: "Empfohlen 1200x630px, JPG oder PNG (kein SVG). Erscheint als Bild, wenn jemand den Link teilt."
       - name: social
         label: Social Links
         type: object
