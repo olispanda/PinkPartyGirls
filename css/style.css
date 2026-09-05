@@ -1237,7 +1237,7 @@ html:not(.snap-page) main {
   height: 100vh;
   pointer-events: none;
   z-index: 2147483000;
-  opacity: 0.26;
+  opacity: 0.42;
   mix-blend-mode: overlay;
   image-rendering: pixelated;
   will-change: transform;
@@ -1245,7 +1245,7 @@ html:not(.snap-page) main {
 
 @media (prefers-reduced-motion: reduce) {
   #grain-overlay {
-    opacity: 0.2;
+    opacity: 0.32;
   }
 }
 
@@ -1492,7 +1492,7 @@ html.js-anim .reveal.is-in {
   display: inline-block;
   background: var(--surface-card);
   color: var(--accent);
-  padding: 0.02em 0.32em 0.06em;
+  padding: 0.2em 0.32em 0.24em;
   margin-inline: 0.03em;
   border-radius: 3px;
   box-shadow: 0 0 0 2px var(--accent);
