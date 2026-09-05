@@ -1591,6 +1591,10 @@ html.js-anim .reveal.is-in {
    position also reads as "where in that range you are". */
 .pink-picker input[type="range"] {
   flex: 1;
+  /* Flex items default to min-width: auto, and a native range input's
+     intrinsic width can exceed the popover — without this it pushes past
+     the card's rounded edge instead of shrinking to fit. */
+  min-width: 0;
   -webkit-appearance: none;
   appearance: none;
   height: 18px;
@@ -1644,6 +1648,15 @@ html.js-anim .reveal.is-in {
 .pink-picker input[type="range"]::-moz-range-thumb:hover,
 .pink-picker input[type="range"]:focus-visible::-moz-range-thumb {
   transform: scale(1.12);
+}
+
+/* The hero wordmark is a flat-color SVG <img>, so CSS custom properties
+   inside it are out of reach — shift its color with a hue-rotate filter
+   instead, kept in sync with --accent by js/pink-egg.js. Scoped to this one
+   element only: other images (uploaded band photos, cover art) must never
+   get this filter. */
+.slide-home__logo {
+  filter: hue-rotate(var(--logo-hue-rotate, 0deg));
 }
 
 @media (prefers-reduced-motion: reduce) {

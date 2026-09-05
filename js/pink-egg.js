@@ -37,6 +37,10 @@
     // rules in style.css) — not a chip-only variable — so this recolors
     // everything, not just the highlight boxes.
     document.documentElement.style.setProperty("--accent", hslFor(hue));
+    // The hero logo is a flat-color SVG <img> — CSS vars can't reach inside
+    // it, so shift it with a matching hue-rotate filter instead (see
+    // .slide-home__logo in style.css).
+    document.documentElement.style.setProperty("--logo-hue-rotate", (hue - DEFAULT_HUE) + "deg");
     try {
       localStorage.setItem(STORAGE_KEY, hue);
     } catch (e) {
