@@ -1470,11 +1470,12 @@ html.js-anim .reveal.is-in {
   translate: 0 var(--py, 0px);
 }
 
-/* The hero video is oversized so the parallax shift never exposes an edge. */
+/* The hero video is oversized so the (now stronger) parallax shift never
+   exposes an edge, even on shorter phone viewports. */
 .slide-home__video[data-parallax] {
-  top: -9%;
+  top: -22%;
   bottom: auto;
-  height: 118%;
+  height: 144%;
   will-change: translate;
 }
 .slide-home__logo[data-parallax] {

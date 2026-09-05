@@ -14,9 +14,9 @@
   // [selector, speed, maxPx] — speed > 0 lags behind the scroll (depth),
   // speed < 0 leads it slightly.
   var CONFIG = [
-    [".slide-home__video", 0.12, 90],
-    [".slide-home__overlay", 0.07, 60],
-    [".slide-home__logo", -0.05, 55],
+    [".slide-home__video", 0.28, 150],
+    [".slide-home__overlay", 0.16, 110],
+    [".slide-home__logo", -0.12, 90],
     [".page-header .section-title", 0.07, 46],
     [".page-header .section-lede", 0.13, 46],
     ["blockquote", 0.08, 50],
