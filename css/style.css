@@ -618,31 +618,6 @@ html.snap-page {
   width: min(20rem, 82%);
   position: relative;
   z-index: 2;
-  transition: opacity 0.6s ease;
-}
-
-/* Metallic 3D version of the wordmark, layered over the flat SVG and faded
-   in once three.js has built + rendered it (see js/logo3d.js). If WebGL is
-   unavailable or the module fails to load, the flat SVG simply stays. */
-.slide-home__logo3d {
-  position: absolute;
-  left: 50%;
-  top: 47%;
-  transform: translate(-50%, -50%);
-  width: min(34rem, 92vw);
-  aspect-ratio: 1 / 1;
-  z-index: 3;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 0.7s ease;
-}
-
-.slide-home.is-3d .slide-home__logo3d {
-  opacity: 1;
-}
-
-.slide-home.is-3d .slide-home__logo {
-  opacity: 0;
 }
 
 .slide-statement__heading {
