@@ -1510,7 +1510,6 @@ html.js-anim .reveal.is-in {
 
   .nav__inner > *,
   .slide-home__logo,
-  .slide-home__logo-sheen::before,
   #grain-overlay {
     animation: none;
   }
@@ -1682,90 +1681,8 @@ html.js-anim .reveal.is-in {
    instead, kept in sync with --accent by js/pink-egg.js. Scoped to this one
    element only: other images (uploaded band photos, cover art) must never
    get this filter. */
-.slide-home__logo-img {
-  filter: hue-rotate(var(--logo-hue-rotate, 0deg));
-  width: 100%;
-  display: block;
-}
-
-/* ==========================================================================
-   Hero wordmark — soap film
-   The same treatment as the water cursor, masked to the letterforms: bands
-   of interference colour drifting under a fixed specular streak. Colours are
-   mixed from --accent, so the wordmark keeps the site's pink and follows the
-   hue picker (js/pink-egg.js) along with everything else.
-   ========================================================================== */
 .slide-home__logo {
-  --logo-i1: color-mix(in oklab, var(--accent) 55%, #ff9ad5);
-  --logo-i2: color-mix(in oklab, var(--accent) 55%, #a48cff);
-  --logo-i3: color-mix(in oklab, var(--accent) 60%, #ffd28a);
-  --logo-i4: color-mix(in oklab, var(--accent) 62%, #8ee8ff);
-}
-
-.slide-home__logo-sheen {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  overflow: hidden;
-  /* %20 rather than a literal space: the filename has one, and unencoded
-     spaces in url() are unreliable. */
-  -webkit-mask: url("/Assets/Logo/PiNk%20PARTy%20GIrls.svg") center / 100% 100% no-repeat;
-  mask: url("/Assets/Logo/PiNk%20PARTy%20GIrls.svg") center / 100% 100% no-repeat;
-  mix-blend-mode: screen;
-  opacity: 0.9;
-}
-
-/* The drifting bands. Oversized and rotating, so the mask above only ever
-   shows a slice of it and the colour keeps moving through the letters. */
-.slide-home__logo-sheen::before {
-  content: "";
-  position: absolute;
-  inset: -55%;
-  background: conic-gradient(
-    from 0deg at 52% 48%,
-    transparent 0deg,
-    var(--logo-i1) 50deg,
-    transparent 105deg,
-    var(--logo-i2) 160deg,
-    transparent 215deg,
-    var(--logo-i3) 268deg,
-    transparent 315deg,
-    var(--logo-i4) 345deg,
-    transparent 360deg
-  );
-  opacity: 0.8;
-  animation: ppg-logo-iris 16s linear infinite;
-}
-
-/* Fixed highlights: a raking streak and a soft catch top-left, which is what
-   reads as a curved wet surface rather than flat colour. */
-.slide-home__logo-sheen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(
-      147deg,
-      rgba(255, 255, 255, 0.5) 0%,
-      rgba(255, 255, 255, 0.08) 26%,
-      rgba(255, 255, 255, 0) 42%
-    ),
-    radial-gradient(
-      ellipse 46% 26% at 22% 12%,
-      rgba(255, 255, 255, 0.42) 0%,
-      rgba(255, 255, 255, 0) 70%
-    ),
-    radial-gradient(
-      ellipse 40% 18% at 74% 92%,
-      rgba(255, 255, 255, 0.22) 0%,
-      rgba(255, 255, 255, 0) 70%
-    );
-}
-
-@keyframes ppg-logo-iris {
-  to {
-    transform: rotate(1turn);
-  }
+  filter: hue-rotate(var(--logo-hue-rotate, 0deg));
 }
 
 @media (prefers-reduced-motion: reduce) {
