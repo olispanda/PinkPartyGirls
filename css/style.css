@@ -1793,6 +1793,33 @@ html.has-water-cursor select {
   backdrop-filter: saturate(1.45) contrast(1.05) brightness(0.99);
 }
 
+/* The blurred rings only exist for the fallback: where the displacement can
+   run, the real bend does this job far better. They are clipped to rings in
+   js/water-cursor.js, so what they blur is the last stretch before the rim
+   while the middle stays clear — which is how a lens behaves, and the reason
+   this doesn't read as the page simply being out of focus. */
+.wc-drop__edge {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  display: none;
+  opacity: var(--wc-alpha, 0);
+}
+
+#water-cursor.is-flat .wc-drop__edge {
+  display: block;
+}
+
+#water-cursor.is-flat .wc-drop__edge--outer {
+  -webkit-backdrop-filter: blur(6px) saturate(1.4) contrast(1.05);
+  backdrop-filter: blur(6px) saturate(1.4) contrast(1.05);
+}
+
+#water-cursor.is-flat .wc-drop__edge--mid {
+  -webkit-backdrop-filter: blur(2px) saturate(1.4);
+  backdrop-filter: blur(2px) saturate(1.4);
+}
+
 /* With no bend under it the film is the only thing shaping the glass, so it
    is eased back to stop it reading as a haze over the content. */
 #water-cursor.is-flat .wc-drop__film {

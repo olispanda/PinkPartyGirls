@@ -477,11 +477,36 @@
      Each droplet is a wrapper (position + squash) holding a lens layer
      (the backdrop-filter) and a gloss layer (highlights, rim, iridescence),
      kept apart so the highlights don't get refracted along with the page. */
-  function makeDrop(cls) {
+  /* Rings of blur for the fallback, where there is no displacement to be had.
+     A lens does not smear evenly — it stays clear through the middle and
+     compresses everything into the last stretch before the rim. Blurring only
+     there, in two steps so the transition isn't a visible edge, gets some of
+     that back on WebKit. Clipped with an even-odd path (outer circle minus
+     inner circle); clip-path, unlike a mask, doesn't cut a sibling's backdrop
+     off. Only rendered under .is-flat — see the stylesheet. */
+  function ringClip(size, outer, inner) {
+    var c = size / 2;
+    function circle(r, sweep) {
+      return (
+        "M " + c + "," + (c - r) +
+        " A " + r + "," + r + " 0 1," + sweep + " " + c + "," + (c + r) +
+        " A " + r + "," + r + " 0 1," + sweep + " " + c + "," + (c - r) + " Z"
+      );
+    }
+    return 'path(evenodd, "' + circle(outer, 1) + " " + circle(inner, 0) + '")';
+  }
+
+  function makeDrop(cls, size) {
     var wrap = document.createElement("div");
     wrap.className = "wc-drop " + cls;
     var lens = document.createElement("div");
     lens.className = "wc-drop__lens";
+    var edgeOuter = document.createElement("div");
+    edgeOuter.className = "wc-drop__edge wc-drop__edge--outer";
+    edgeOuter.style.clipPath = ringClip(size, size / 2, size * 0.425);
+    var edgeMid = document.createElement("div");
+    edgeMid.className = "wc-drop__edge wc-drop__edge--mid";
+    edgeMid.style.clipPath = ringClip(size, size * 0.425, size * 0.34);
     // Soap-film interference, drifting on its own between the refraction and
     // the highlights.
     var film = document.createElement("div");
@@ -489,6 +514,8 @@
     var gloss = document.createElement("div");
     gloss.className = "wc-drop__gloss";
     wrap.appendChild(lens);
+    wrap.appendChild(edgeMid);
+    wrap.appendChild(edgeOuter);
     wrap.appendChild(film);
     wrap.appendChild(gloss);
     return wrap;
@@ -498,8 +525,8 @@
   root.id = "water-cursor";
   root.setAttribute("aria-hidden", "true");
 
-  var main = makeDrop("wc-drop--main");
-  var sat = makeDrop("wc-drop--sat");
+  var main = makeDrop("wc-drop--main", SIZE);
+  var sat = makeDrop("wc-drop--sat", SAT_SIZE);
   var splash = document.createElement("div");
   splash.className = "wc-splash";
   var splashRing = document.createElement("div");
