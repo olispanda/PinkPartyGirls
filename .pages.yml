@@ -4,9 +4,10 @@
 
 media:
   input: Assets/uploads
-  # Relative path (no leading slash) so uploads resolve correctly whether the
-  # site is served from a domain root or a GitHub Pages project subpath.
-  output: Assets/uploads
+  # Root-absolute: pages now live at pretty URLs (e.g. /about is served from
+  # about/index.html), so uploaded paths need to resolve from the site root
+  # regardless of how deep the current page sits.
+  output: /Assets/uploads
   categories: [image, video]
 
 settings:

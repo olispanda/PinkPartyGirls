@@ -1,8 +1,8 @@
 {
-  "hero_video": "Assets/Video/hero-bg.mp4",
-  "hero_logo": "Assets/Logo/PiNk PARTy GIrls.svg",
+  "hero_video": "/Assets/Video/hero-bg.mp4",
+  "hero_logo": "/Assets/Logo/PiNk PARTy GIrls.svg",
   "statement_heading": "Four girls. One bad idea. Way too much pink.",
   "statement_button_label": "More in About",
-  "statement_button_link": "about.html",
+  "statement_button_link": "/about",
   "events_heading": "Our Next Events"
 }

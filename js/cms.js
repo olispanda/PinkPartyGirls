@@ -8,7 +8,10 @@
 (function () {
   "use strict";
 
-  var BASE = "content/";
+  // Root-absolute: pages now live at pretty URLs like /about (served from
+  // about/index.html), so a relative "content/..." would resolve under the
+  // wrong path depending on how deep the current page sits.
+  var BASE = "/content/";
 
   function load(name) {
     return fetch(BASE + name + ".json", { cache: "no-cache" })

@@ -61,6 +61,10 @@ branch" – der Workflow [`deploy.yml`](.github/workflows/deploy.yml) baut die S
 und setzt dabei die Link-Vorschau-Tags ein, siehe unten). Beim ersten Push auf
 `main` läuft der Workflow automatisch einmal durch und die Seite ist live.
 
+Der Build erzeugt dabei auch **saubere URLs**: `about.html` bleibt im Repo (fürs
+Editieren/CMS), landet beim Deploy aber als `about/index.html`, erreichbar unter
+`/about` statt `/about.html`. Nur die Startseite bleibt an der Domain-Wurzel.
+
 Die Datei [`CNAME`](CNAME) im Repo-Root enthält bereits `www.pinkpartygirls.ch` –
 GitHub übernimmt die Domain automatisch, sobald Pages aktiv ist und das DNS steht.
 

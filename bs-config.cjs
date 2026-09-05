@@ -4,6 +4,13 @@ module.exports = {
   server: {
     baseDir: ".",
     index: "index.html",
+    // Pages link to pretty URLs (/about, not /about.html) — the deployed
+    // site gets real about/index.html folders (see scripts/inject-og.mjs),
+    // but locally we keep flat *.html files for simplicity, so tell the
+    // static server to try appending .html when a path has no extension.
+    serveStaticOptions: {
+      extensions: ["html"],
+    },
   },
   // Watch every asset the pages use and reload / inject on change.
   files: ["*.html", "css/*.css", "js/*.js", "content/*.json", "Assets/**/*"],
