@@ -978,6 +978,23 @@ html.snap-page {
   line-height: 1.2;
 }
 
+/* Gratis-Badge (see js/cms.js showItemHTML) — inline after the venue name. */
+.show__tag {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 0.5rem;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--surface);
+  font-family: var(--font-ui);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.5;
+}
+
 /* Keep the Tickets button optically centred against the two text lines. */
 .show .btn {
   align-self: center;

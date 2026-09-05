@@ -136,7 +136,8 @@ content:
               format: yyyy-MM-dd
           - { name: title, label: Venue / Stadt, type: string }
           - { name: location, label: Adresse, type: string }
-          - { name: tickets_url, label: Ticket-Link, type: string, required: false }
+          - { name: free, label: "Gratis-Konzert?", type: boolean, default: false, description: "Zeigt ein Gratis-Badge und ersetzt den Tickets-Button durch Gratis." }
+          - { name: tickets_url, label: Ticket-Link, type: string, required: false, description: "Optional, auch bei Gratis-Konzerten (z. B. für eine Anmeldung/RSVP). Leer lassen, wenn kein Link nötig ist." }
 
   - name: contact
     label: Contact

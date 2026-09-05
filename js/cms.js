@@ -245,16 +245,20 @@
   // homepage "Our Next Events" teaser.
   function showItemHTML(s) {
     var dt = showDate(s.date);
+    var isFree = !!s.free;
+    var hasLink = s.tickets_url && s.tickets_url !== "#";
+    var label = isFree ? "Gratis" : "Tickets";
     var ticket =
-      s.tickets_url && s.tickets_url !== "#"
-        ? '<a href="' + esc(s.tickets_url) + '"' + linkAttrs(s.tickets_url) +
-          ' class="btn btn--outline btn--external">Tickets</a>'
-        : '<a href="#" class="btn btn--outline btn--external">Tickets</a>';
+      '<a href="' + esc(hasLink ? s.tickets_url : "#") + '"' +
+      (hasLink ? linkAttrs(s.tickets_url) : "") +
+      ' class="btn btn--outline' + (hasLink ? " btn--external" : "") + '">' +
+      label + "</a>";
+    var tag = isFree ? ' <span class="show__tag">Gratis</span>' : "";
     return (
       '<div class="show">' +
       '<div class="show__date"><span class="day">' + esc(dt.day) +
       '</span><span class="month">' + esc(dt.month) + "</span></div>" +
-      '<div class="show__info"><h3>' + esc(s.title) + "</h3>" +
+      '<div class="show__info"><h3>' + esc(s.title) + tag + "</h3>" +
       "<p>" + esc(s.location) + "</p></div>" +
       ticket +
       "</div>"
