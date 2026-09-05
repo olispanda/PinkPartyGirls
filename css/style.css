@@ -1784,8 +1784,19 @@ html.has-water-cursor select {
    wash: without the bend it is at least clear glass, and the film and
    highlights above still carry the bubble. */
 #water-cursor.is-flat .wc-drop__lens {
-  -webkit-backdrop-filter: blur(1.5px) saturate(1.5) contrast(1.06) brightness(0.98);
-  backdrop-filter: blur(1.5px) saturate(1.5) contrast(1.06) brightness(0.98);
+  /* No blur at all. Blur was standing in for refraction, but a smear is not
+     a bend — it just makes the page look broken behind the glass, and on a
+     phone the drop sits there long enough for anyone to notice. Clear glass
+     with a tint is honest: a real bubble is something you see straight
+     through. The film and highlights above still make it a bubble. */
+  -webkit-backdrop-filter: saturate(1.45) contrast(1.05) brightness(0.99);
+  backdrop-filter: saturate(1.45) contrast(1.05) brightness(0.99);
+}
+
+/* With no bend under it the film is the only thing shaping the glass, so it
+   is eased back to stop it reading as a haze over the content. */
+#water-cursor.is-flat .wc-drop__film {
+  opacity: calc(var(--wc-alpha, 0) * 0.62);
 }
 
 /* Soap-film interference: the shifting colour in a bubble wall, which is
