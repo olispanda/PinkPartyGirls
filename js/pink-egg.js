@@ -138,6 +138,26 @@
     // than track the anchor while scrolling/resizing, just close it.
     window.addEventListener("scroll", closePicker, { passive: true, capture: true });
     window.addEventListener("resize", closePicker, { passive: true });
+
+    // Live-sync across every open tab/window of the site: the "storage"
+    // event fires in *other* tabs (never the one that made the change) the
+    // instant localStorage is written, so picking a color on the Home tab
+    // recolors an already-open About/Music/... tab immediately, no reload.
+    window.addEventListener("storage", function (e) {
+      if (e.key !== STORAGE_KEY || e.newValue == null) return;
+      var hue = setHue(e.newValue);
+      syncOpenPicker(hue);
+    });
+  }
+
+  // If this tab happens to have its own picker open when another tab
+  // changes the color, keep its slider/swatch in sync too.
+  function syncOpenPicker(hue) {
+    if (!picker) return;
+    var input = picker.querySelector("input");
+    var swatch = picker.querySelector(".pink-picker__swatch");
+    if (input) input.value = hue;
+    if (swatch) swatch.style.background = hslFor(hue);
   }
 
   /* ---- hue-picker popover ------------------------------------------- */
