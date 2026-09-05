@@ -26,9 +26,11 @@
      Sizes are in CSS pixels. The droplet element itself never changes size
      (hover/idle states are transforms) so the filter's pixel units stay
      valid and the map is only ever built once.                            */
-  var SIZE = 136; // droplet diameter
+  var SIZE = 136; // droplet diameter when it is the pointer
+  var AMBIENT_SIZE = 172; // …and when it just sits in the middle of a phone
   var SAT_SIZE = 46; // trailing satellite bead
   var MAP_RES = 288; // displacement map resolution (square)
+  var AMBIENT_DRIFT = 13; // px of slow wander around centre on touch
   /* REFRACT is the budget for how far a pixel can be pulled inward, and it
      has a ceiling worth understanding: the drop can only show the part of
      the page that its outermost sample still reaches. Push it too far and
@@ -83,7 +85,15 @@
     window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   var finePointer = window.matchMedia && window.matchMedia("(pointer: fine)").matches;
 
-  if (reduceMotion || !finePointer) return;
+  if (reduceMotion) return;
+
+  /* Touch has no pointer to replace, so the drop stops being a cursor and
+     becomes a fixture: parked in the middle of the screen, drifting a little,
+     with the page scrolling through it. Bigger than the cursor version, since
+     nothing moves it out of the way and it has to hold its own on a small
+     screen. */
+  var ambient = !finePointer;
+  if (ambient) SIZE = AMBIENT_SIZE;
 
   /* ---- capability check -------------------------------------------------
      Safari parses url() inside backdrop-filter but never renders it, and
@@ -508,11 +518,20 @@
     var mapURL = canRefract ? buildMap() : null;
     if (mapURL) {
       mapCache = mapURL; // kept so a later step-down doesn't rebuild it
-      installFilters(mapURL, true);
+      // Phones skip the three-pass colour fringe from the start. The backdrop
+      // is redrawn on every scrolled frame, and three displacement passes
+      // over a live backdrop is the one part of this that can cost a phone
+      // its frame rate.
+      installFilters(mapURL, !ambient);
     } else {
       root.classList.add("is-flat");
     }
-    document.documentElement.classList.add("has-water-cursor");
+    if (ambient) {
+      root.classList.add("is-ambient");
+    } else {
+      // Only hide the native cursor when there is actually one to replace.
+      document.documentElement.classList.add("has-water-cursor");
+    }
     start();
   }
 
@@ -526,7 +545,10 @@
   var hoverScale = 1;
   var hoverTarget = 1;
   var fade = 0; // eased 0..1 opacity gate
-  var fadeTarget = 0;
+  /* On touch it has to show itself — no pointer is ever going to arrive and
+     reveal it. Initialised here rather than in mount(), which runs before
+     these declarations and would have its assignment overwritten. */
+  var fadeTarget = ambient ? 1 : 0;
 
   var drops = [
     { node: main, x: target.x, y: target.y, vx: 0, vy: 0, k: STIFF, d: DAMP, size: SIZE },
@@ -555,12 +577,28 @@
   );
 
   function hide() {
+    if (ambient) return; // it lives in the middle of the screen; nothing to leave
     fadeTarget = 0;
     visible = false;
   }
   document.addEventListener("pointerleave", hide);
   document.addEventListener("mouseleave", hide);
   window.addEventListener("blur", hide);
+
+  // Re-centre when the viewport changes shape — rotation, or the address bar
+  // sliding away on a phone.
+  window.addEventListener(
+    "resize",
+    function () {
+      if (ambient) recentre();
+    },
+    { passive: true }
+  );
+
+  function recentre() {
+    target.x = window.innerWidth / 2;
+    target.y = window.innerHeight / 2;
+  }
 
   /* Hover states. `label` and `summary` are in here because they behave like
      buttons even though they aren't one. */
@@ -577,26 +615,31 @@
     root.classList.toggle("is-over-link", !!isLink);
   }
 
-  document.addEventListener(
-    "pointerover",
-    function (e) {
-      updateHover(e.target);
-    },
-    { passive: true }
-  );
-  document.addEventListener(
-    "pointerout",
-    function (e) {
-      if (!e.relatedTarget) updateHover(null);
-    },
-    { passive: true }
-  );
+  // Hover and click feedback belong to the pointer version. On touch the drop
+  // isn't tracking anything, so a tap swelling it or firing a ripple somewhere
+  // across the screen would just read as a glitch.
+  if (!ambient) {
+    document.addEventListener(
+      "pointerover",
+      function (e) {
+        updateHover(e.target);
+      },
+      { passive: true }
+    );
+    document.addEventListener(
+      "pointerout",
+      function (e) {
+        if (!e.relatedTarget) updateHover(null);
+      },
+      { passive: true }
+    );
+  }
 
   /* Click sends a ripple out from where you pressed. */
   document.addEventListener(
     "pointerdown",
     function (e) {
-      if (e.pointerType && e.pointerType !== "mouse") return;
+      if (ambient || (e.pointerType && e.pointerType !== "mouse")) return;
       splash.style.transform =
         "translate3d(" + (e.clientX - 70) + "px," + (e.clientY - 70) + "px,0)";
       splash.classList.remove("is-on");
@@ -612,7 +655,9 @@
      If we can't hold a reasonable frame rate while the pointer is actually
      moving, drop the rainbow fringe first and the satellite second rather
      than letting the whole page stutter.                                  */
-  var quality = 2; // 2 = full, 1 = no aberration, 0 = no satellite either
+  // 2 = full, 1 = no aberration, 0 = no satellite either. Touch starts at 1,
+  // matching the single-pass filter mount() installed for it.
+  var quality = ambient ? 1 : 2;
   var slowFrames = 0;
   var lastT = 0;
 
@@ -625,7 +670,11 @@
       }
     } else if (quality === 1) {
       quality = 0;
-      root.classList.add("no-satellite");
+      // On touch there is no satellite to drop, so the remaining saving is
+      // the displacement itself: fall back to the blurred bubble rather than
+      // let a weak phone stutter through every scroll.
+      if (ambient) root.classList.add("is-flat");
+      else root.classList.add("no-satellite");
     }
     slowFrames = 0;
   }
@@ -641,6 +690,14 @@
     hoverScale += (hoverTarget - hoverScale) * 0.16;
 
     var moving = false;
+
+    // Parked in the centre, wandering just enough not to look pasted on.
+    if (ambient) {
+      var at = (now - t0) / 1000;
+      target.x = window.innerWidth / 2 + Math.sin(at * 0.29) * AMBIENT_DRIFT;
+      target.y =
+        window.innerHeight / 2 + Math.sin(at * 0.21 + 1.3) * (AMBIENT_DRIFT * 0.75);
+    }
 
     for (var i = 0; i < drops.length; i++) {
       var p = drops[i];
@@ -702,7 +759,10 @@
         "rad)";
     }
 
-    if (moving && quality > 0) {
+    // The pointer version only measures while it is actually travelling; the
+    // ambient one barely moves, so it watches continuously — its expensive
+    // moments are the scrolls, not its own drift.
+    if ((moving || ambient) && quality > 0) {
       if (dt > 26) slowFrames++;
       else slowFrames = Math.max(0, slowFrames - 1);
       if (slowFrames > 45) degrade();

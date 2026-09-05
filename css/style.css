@@ -1962,3 +1962,12 @@ html.has-water-cursor select {
     display: none;
   }
 }
+
+/* On touch there is no pointer to replace, so the drop is a fixture parked in
+   the middle of the screen with the page scrolling through it (see the
+   `ambient` branch in js/water-cursor.js). No trailing bead and no click
+   ripple: neither has anything to follow. */
+#water-cursor.is-ambient .wc-drop--sat,
+#water-cursor.is-ambient .wc-splash {
+  display: none;
+}
