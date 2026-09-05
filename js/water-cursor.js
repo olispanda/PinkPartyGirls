@@ -36,13 +36,25 @@
      the middle magnifies a tiny patch — which reads as an empty milky ball,
      not as water. Around a third of the radius keeps the whole area behind
      the drop visible, bent and enlarged. */
-  var REFRACT = 42; // px of bend at the rim, main drop
-  var SAT_REFRACT = 15; // …and for the satellite
-  var ABERRATION = 0.05; // per-channel spread of the refraction (rainbow rim)
-  var LENS_ZOOM = 0.5; // share of the bend that is linear — the magnifying part
-  var LENS_POWER = 2.2; // the mid-field falloff
-  var RIM_BITE = 0.3; // share of the curved part that piles up right at the rim
-  var EDGE_FADE = 0.86; // where the bend feathers back to zero (0..1 of radius)
+  var REFRACT = 70; // px of bend at the rim, main drop
+  var SAT_REFRACT = 24; // …and for the satellite
+  var ABERRATION = 0.14; // per-channel spread of the refraction (rainbow rim)
+  /* The shape of a real bead: nearly flat through the middle, so whatever is
+     behind it stays sharp and only drifts, then a hard turn in the last
+     fifth of the radius that sweeps the surroundings into a compressed band
+     around the edge. Spreading the bend evenly instead (a big linear term)
+     is what made it read as a magnifying glass rather than a droplet. */
+  var LENS_ZOOM = 0.12; // the gentle, even part
+  var LENS_POWER = 3.6; // mid-field falloff
+  var RIM_BITE = 0.45; // share that piles up right at the rim
+  /* In the last few percent of the radius the bend flips and points outward,
+     so those pixels sample from beyond the drop's own outline. That is what
+     puts a compressed band of the surroundings around the edge — the thing
+     that makes a bead look like it is sitting on the page rather than
+     punched into it. It only works because the filter region below is wider
+     than the element; sampling past the region returns nothing. */
+  var RIM_OUT = 1.65;
+  var EDGE_FADE = 0.975; // where the bend feathers back to zero (0..1 of radius)
 
   /* A perfectly symmetrical lens reads as CGI glass. Real water has a surface
      that isn't quite even, so the map gets a little standing-wave structure:
@@ -125,8 +137,11 @@
           // top of it piles up in the last stretch before the rim, which is
           // what smears the surroundings into a compressed ring there.
           var curve =
-            (1 - RIM_BITE) * Math.pow(r, LENS_POWER) + RIM_BITE * Math.pow(r, 6);
-          var mag = (LENS_ZOOM * r + (1 - LENS_ZOOM) * curve) * feather;
+            (1 - RIM_BITE) * Math.pow(r, LENS_POWER) + RIM_BITE * Math.pow(r, 8);
+          var bend = LENS_ZOOM * r + (1 - LENS_ZOOM) * curve;
+          // Steep enough to stay out of the way until the very edge, where it
+          // overtakes the inward bend and reverses it.
+          var mag = (bend - RIM_OUT * Math.pow(r, 14)) * feather;
 
           // Surface that isn't quite flat.
           var th = Math.atan2(ny, nx);
@@ -178,14 +193,18 @@
   }
 
   function buildFilter(id, px, scale, mapURL, aberration) {
+    /* The region reaches well past the element so the rim can sample page
+       content from outside the drop's own outline. Output is still clipped
+       to the border box and its radius, so the overhang costs nothing
+       visible — without it the outward bend at the rim reads as a hole. */
     var f = el("filter", {
       id: id,
       filterUnits: "objectBoundingBox",
       primitiveUnits: "userSpaceOnUse",
-      x: "0%",
-      y: "0%",
-      width: "100%",
-      height: "100%",
+      x: "-15%",
+      y: "-15%",
+      width: "130%",
+      height: "130%",
       "color-interpolation-filters": "sRGB"
     });
 

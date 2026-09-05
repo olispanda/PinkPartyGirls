@@ -1788,12 +1788,15 @@ html.has-water-cursor select {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  -webkit-backdrop-filter: url(#wc-refract) saturate(1.35) brightness(1.03);
-  backdrop-filter: url(#wc-refract) saturate(1.35) brightness(1.03);
+  /* Tinted rather than brightened. Lifting the backdrop turns the drop into
+     frosted plastic; darkening it slightly and pushing contrast and colour
+     is what gives glass its depth and lets the fringes read. */
+  -webkit-backdrop-filter: url(#wc-refract) saturate(1.55) contrast(1.1) brightness(0.94);
+  backdrop-filter: url(#wc-refract) saturate(1.55) contrast(1.1) brightness(0.94);
   box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.45),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    inset 0 -10px 20px -14px rgba(255, 255, 255, 0.4),
+    inset 0 1px 1px rgba(255, 255, 255, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.16),
+    inset 0 0 14px -4px rgba(0, 0, 0, 0.5),
     0 14px 32px -20px rgba(0, 0, 0, 0.55);
 }
 
@@ -1838,25 +1841,25 @@ html.has-water-cursor select {
     radial-gradient(
       circle at 42% 36%,
       transparent 56%,
-      rgba(255, 92, 190, 0.4) 80%,
+      rgba(255, 92, 190, 0.15) 80%,
       transparent 95%
     ),
     radial-gradient(
       circle at 64% 66%,
       transparent 58%,
-      rgba(112, 226, 255, 0.36) 82%,
+      rgba(112, 226, 255, 0.22) 82%,
       transparent 96%
     ),
     radial-gradient(
       circle at 58% 34%,
       transparent 60%,
-      rgba(255, 238, 142, 0.26) 84%,
+      rgba(255, 238, 142, 0.16) 84%,
       transparent 97%
     ),
     radial-gradient(
       circle at 36% 64%,
       transparent 58%,
-      rgba(190, 130, 255, 0.34) 83%,
+      rgba(190, 130, 255, 0.2) 83%,
       transparent 96%
     );
   animation: wc-film-a 15s linear infinite;
@@ -1873,13 +1876,13 @@ html.has-water-cursor select {
     radial-gradient(
       circle at 52% 62%,
       transparent 62%,
-      rgba(150, 255, 226, 0.3) 84%,
+      rgba(150, 255, 226, 0.18) 84%,
       transparent 97%
     ),
     radial-gradient(
       circle at 40% 48%,
       transparent 64%,
-      rgba(255, 150, 210, 0.24) 86%,
+      rgba(255, 150, 210, 0.15) 86%,
       transparent 98%
     );
   animation: wc-film-b 9.5s linear infinite reverse;
@@ -1903,49 +1906,38 @@ html.has-water-cursor select {
   position: absolute;
   inset: 0;
   border-radius: 50%;
+  /* Small and few. Every broad white wash here costs contrast in the lens
+     underneath, and enough of them turn the drop into frosted plastic. What
+     a real bead shows is a hard specular dot, a faint second catch, a thin
+     caustic where the gathered light hits the far wall, and a rim. */
   background:
     /* tight specular catch — the light source */
     radial-gradient(
-      ellipse 16% 11% at 30% 22%,
-      rgba(255, 255, 255, 0.95) 0%,
-      rgba(255, 255, 255, 0.5) 45%,
-      rgba(255, 255, 255, 0) 100%
-    ),
-    /* the soft bloom around it */
-    radial-gradient(
-      circle at 32% 26%,
-      rgba(255, 255, 255, 0.16) 0%,
-      rgba(255, 255, 255, 0) 34%
-    ),
-    /* light bounced back up off the far wall of the drop */
-    radial-gradient(
-      ellipse 30% 16% at 63% 82%,
-      rgba(255, 255, 255, 0.15) 0%,
-      rgba(255, 255, 255, 0) 100%
-    ),
-    /* caustic: light gathered by the lens and thrown against the far wall,
-       a thin bright arc rather than a glow */
-    radial-gradient(
-      ellipse 34% 4.5% at 50% 90%,
-      rgba(255, 255, 255, 0.45) 0%,
-      rgba(255, 255, 255, 0.06) 60%,
+      ellipse 13% 9% at 30% 21%,
+      rgba(255, 255, 255, 0.92) 0%,
+      rgba(255, 255, 255, 0.35) 50%,
       rgba(255, 255, 255, 0) 100%
     ),
     /* a second, weaker source catching the top right */
     radial-gradient(
-      ellipse 9% 6% at 72% 30%,
-      rgba(255, 255, 255, 0.4) 0%,
+      ellipse 7% 5% at 71% 29%,
+      rgba(255, 255, 255, 0.34) 0%,
       rgba(255, 255, 255, 0) 100%
     ),
-    /* the wall itself, thickening toward the silhouette. Kept thin: on the
-       dark slides any wash across the middle reads as milky plastic rather
-       than water. */
+    /* caustic: light gathered by the lens and thrown against the far wall */
+    radial-gradient(
+      ellipse 27% 4% at 53% 89%,
+      rgba(255, 255, 255, 0.34) 0%,
+      rgba(255, 255, 255, 0.04) 65%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    /* the rim, kept to a hairline so it draws the silhouette without
+       fogging the face */
     radial-gradient(
       circle at 50% 50%,
-      rgba(255, 255, 255, 0) 72%,
-      rgba(255, 255, 255, 0.1) 88%,
-      rgba(255, 255, 255, 0.26) 97%,
-      rgba(255, 255, 255, 0.06) 100%
+      rgba(255, 255, 255, 0) 89%,
+      rgba(255, 255, 255, 0.2) 96.5%,
+      rgba(255, 255, 255, 0.04) 100%
     );
 }
 
