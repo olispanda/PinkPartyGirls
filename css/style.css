@@ -1510,6 +1510,7 @@ html.js-anim .reveal.is-in {
 
   .nav__inner > *,
   .slide-home__logo,
+  .slide-home__logo-sheen::before,
   #grain-overlay {
     animation: none;
   }
@@ -1681,8 +1682,90 @@ html.js-anim .reveal.is-in {
    instead, kept in sync with --accent by js/pink-egg.js. Scoped to this one
    element only: other images (uploaded band photos, cover art) must never
    get this filter. */
-.slide-home__logo {
+.slide-home__logo-img {
   filter: hue-rotate(var(--logo-hue-rotate, 0deg));
+  width: 100%;
+  display: block;
+}
+
+/* ==========================================================================
+   Hero wordmark — soap film
+   The same treatment as the water cursor, masked to the letterforms: bands
+   of interference colour drifting under a fixed specular streak. Colours are
+   mixed from --accent, so the wordmark keeps the site's pink and follows the
+   hue picker (js/pink-egg.js) along with everything else.
+   ========================================================================== */
+.slide-home__logo {
+  --logo-i1: color-mix(in oklab, var(--accent) 55%, #ff9ad5);
+  --logo-i2: color-mix(in oklab, var(--accent) 55%, #a48cff);
+  --logo-i3: color-mix(in oklab, var(--accent) 60%, #ffd28a);
+  --logo-i4: color-mix(in oklab, var(--accent) 62%, #8ee8ff);
+}
+
+.slide-home__logo-sheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  /* %20 rather than a literal space: the filename has one, and unencoded
+     spaces in url() are unreliable. */
+  -webkit-mask: url("/Assets/Logo/PiNk%20PARTy%20GIrls.svg") center / 100% 100% no-repeat;
+  mask: url("/Assets/Logo/PiNk%20PARTy%20GIrls.svg") center / 100% 100% no-repeat;
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+
+/* The drifting bands. Oversized and rotating, so the mask above only ever
+   shows a slice of it and the colour keeps moving through the letters. */
+.slide-home__logo-sheen::before {
+  content: "";
+  position: absolute;
+  inset: -55%;
+  background: conic-gradient(
+    from 0deg at 52% 48%,
+    transparent 0deg,
+    var(--logo-i1) 50deg,
+    transparent 105deg,
+    var(--logo-i2) 160deg,
+    transparent 215deg,
+    var(--logo-i3) 268deg,
+    transparent 315deg,
+    var(--logo-i4) 345deg,
+    transparent 360deg
+  );
+  opacity: 0.8;
+  animation: ppg-logo-iris 16s linear infinite;
+}
+
+/* Fixed highlights: a raking streak and a soft catch top-left, which is what
+   reads as a curved wet surface rather than flat colour. */
+.slide-home__logo-sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(
+      147deg,
+      rgba(255, 255, 255, 0.5) 0%,
+      rgba(255, 255, 255, 0.08) 26%,
+      rgba(255, 255, 255, 0) 42%
+    ),
+    radial-gradient(
+      ellipse 46% 26% at 22% 12%,
+      rgba(255, 255, 255, 0.42) 0%,
+      rgba(255, 255, 255, 0) 70%
+    ),
+    radial-gradient(
+      ellipse 40% 18% at 74% 92%,
+      rgba(255, 255, 255, 0.22) 0%,
+      rgba(255, 255, 255, 0) 70%
+    );
+}
+
+@keyframes ppg-logo-iris {
+  to {
+    transform: rotate(1turn);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1744,6 +1827,17 @@ html.has-water-cursor select {
      drop up into a grey ball. Below it, the lens gets clean page content and
      the grain simply lies over the top, the same as everywhere else. */
   z-index: 2147482000;
+
+  /* The interference colours are mixed out of --accent rather than hard-coded,
+     so the droplet carries the site's pink and follows the hue picker. The
+     neighbours (a little cyan, a little gold, a little white) only shift the
+     mix far enough to read as a film — pink stays the dominant note. */
+  --wc-c1: color-mix(in srgb, var(--accent) 30%, transparent);
+  --wc-c2: color-mix(in srgb, color-mix(in oklab, var(--accent) 62%, #7ad9ff) 27%, transparent);
+  --wc-c3: color-mix(in srgb, color-mix(in oklab, var(--accent) 68%, #ffd98a) 23%, transparent);
+  --wc-c4: color-mix(in srgb, color-mix(in oklab, var(--accent) 55%, #ffffff) 26%, transparent);
+  --wc-c5: color-mix(in srgb, color-mix(in oklab, var(--accent) 58%, #9effe0) 22%, transparent);
+  --wc-rim: color-mix(in srgb, var(--accent) 40%, #ffffff);
 }
 
 /* Nothing on the wrapper may form a backdrop root — opacity below 1, a
@@ -1841,25 +1935,25 @@ html.has-water-cursor select {
     radial-gradient(
       circle at 42% 36%,
       transparent 56%,
-      rgba(255, 92, 190, 0.15) 80%,
+      var(--wc-c1) 80%,
       transparent 95%
     ),
     radial-gradient(
       circle at 64% 66%,
       transparent 58%,
-      rgba(112, 226, 255, 0.22) 82%,
+      var(--wc-c2) 82%,
       transparent 96%
     ),
     radial-gradient(
       circle at 58% 34%,
       transparent 60%,
-      rgba(255, 238, 142, 0.16) 84%,
+      var(--wc-c3) 84%,
       transparent 97%
     ),
     radial-gradient(
       circle at 36% 64%,
       transparent 58%,
-      rgba(190, 130, 255, 0.2) 83%,
+      var(--wc-c4) 83%,
       transparent 96%
     );
   animation: wc-film-a 15s linear infinite;
@@ -1876,13 +1970,13 @@ html.has-water-cursor select {
     radial-gradient(
       circle at 52% 62%,
       transparent 62%,
-      rgba(150, 255, 226, 0.18) 84%,
+      var(--wc-c5) 84%,
       transparent 97%
     ),
     radial-gradient(
       circle at 40% 48%,
       transparent 64%,
-      rgba(255, 150, 210, 0.15) 86%,
+      var(--wc-c1) 86%,
       transparent 98%
     );
   animation: wc-film-b 9.5s linear infinite reverse;
@@ -1932,12 +2026,13 @@ html.has-water-cursor select {
       rgba(255, 255, 255, 0) 100%
     ),
     /* the rim, kept to a hairline so it draws the silhouette without
-       fogging the face */
+       fogging the face. Tinted, unlike the speculars — those stay white
+       because they are the light source itself. */
     radial-gradient(
       circle at 50% 50%,
       rgba(255, 255, 255, 0) 89%,
-      rgba(255, 255, 255, 0.2) 96.5%,
-      rgba(255, 255, 255, 0.04) 100%
+      color-mix(in srgb, var(--wc-rim) 24%, transparent) 96.5%,
+      color-mix(in srgb, var(--wc-rim) 5%, transparent) 100%
     );
 }
 
