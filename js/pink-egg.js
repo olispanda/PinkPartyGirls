@@ -1,9 +1,11 @@
 /* ==========================================================================
    Easter egg: every occurrence of the word "pink" (in any text on the page,
    including content injected later by js/cms.js) gets wrapped in a marker-
-   highlight chip. Click / tap / Enter on one opens a small hue slider —
-   pick your own pink, it's saved (localStorage) and reapplied everywhere,
-   on every page, from then on.
+   highlight chip. Click / tap / Enter on one opens a small hue slider that
+   recolors --accent — the whole site's pink (text, buttons, borders,
+   background washes, and the chips themselves), not just the chip boxes.
+   The choice is saved (localStorage) and reapplied everywhere, on every
+   page, from then on.
    ========================================================================== */
 (function () {
   "use strict";
@@ -31,7 +33,10 @@
 
   function setHue(hue) {
     hue = Math.max(MIN_HUE, Math.min(MAX_HUE, parseInt(hue, 10) || DEFAULT_HUE));
-    document.documentElement.style.setProperty("--pink-word-bg", hslFor(hue));
+    // --accent drives the whole site's pink (see :root and the color-mix()
+    // rules in style.css) — not a chip-only variable — so this recolors
+    // everything, not just the highlight boxes.
+    document.documentElement.style.setProperty("--accent", hslFor(hue));
     try {
       localStorage.setItem(STORAGE_KEY, hue);
     } catch (e) {
