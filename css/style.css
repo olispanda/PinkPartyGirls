@@ -133,10 +133,11 @@ body {
   line-height: 1.6;
   overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
-  /* Flatten all page content into one stacking context so the film-grain
-     overlay's mix-blend-mode blends against a single backdrop. Without this,
-     any element promoted to its own compositing layer on hover (buttons and
-     cards use transform: translateY) shows a rectangular blend seam. */
+  /* Flatten all page content into one stacking context so the nav/footer's
+     mix-blend-mode: difference blends against a single backdrop. Without
+     this, any element promoted to its own compositing layer on hover
+     (buttons and cards use transform: translateY) shows a rectangular
+     blend seam. */
   isolation: isolate;
 }
 
@@ -620,10 +621,10 @@ html.snap-page {
 
 /* Touch devices: drop "fixed" attachment on every wash gradient (body,
    .slide--dark, .slide-home__overlay). iOS Safari's shaky support for it is
-   what left the pink wash / grain not actually reaching behind the status
-   bar and home-indicator safe areas despite viewport-fit=cover — "scroll"
-   paints correctly there and looks identical, since these are static washes
-   with no visible parallax to begin with. */
+   what left the pink wash not actually reaching behind the status bar and
+   home-indicator safe areas despite viewport-fit=cover — "scroll" paints
+   correctly there and looks identical, since these are static washes with
+   no visible parallax to begin with. */
 @media (pointer: coarse) {
   body,
   .slide--dark,
@@ -1265,36 +1266,6 @@ html:not(.snap-page) main {
 }
 
 /* ==========================================================================
-   Interactive film grain overlay (see js/grain.js)
-   ========================================================================== */
-#grain-overlay {
-  position: fixed;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  pointer-events: none;
-  z-index: 2147483000;
-  opacity: 0.42;
-  mix-blend-mode: overlay;
-  image-rendering: pixelated;
-  will-change: transform;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  #grain-overlay {
-    opacity: 0.32;
-  }
-}
-
-/* Same texture, toned down on phones — at arm's length and on small,
-   dense screens the full-strength grain reads as noisy rather than filmic. */
-@media (max-width: 640px) {
-  #grain-overlay {
-    opacity: 0.22;
-  }
-}
-
-/* ==========================================================================
    Micro-animations
    Small, consistent motion: one easing curve, short durations, everything
    opt-out under prefers-reduced-motion. Reveal-on-scroll is progressive —
@@ -1472,15 +1443,6 @@ html.js-anim .reveal.is-in {
   opacity: 1;
 }
 
-/* --- Grain overlay: fade in on load -------------------------------- */
-
-@keyframes ppg-grain-in {
-  from { opacity: 0; }
-}
-#grain-overlay {
-  animation: ppg-grain-in 1.2s ease 0.3s backwards;
-}
-
 /* --- Parallax (js/parallax.js sets --py per element) --------------- */
 
 [data-parallax] {
@@ -1509,8 +1471,7 @@ html.js-anim .reveal.is-in {
   }
 
   .nav__inner > *,
-  .slide-home__logo,
-  #grain-overlay {
+  .slide-home__logo {
     animation: none;
   }
 
@@ -1739,10 +1700,7 @@ html.has-water-cursor select {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  /* Under the film grain. Above it, the grain lands inside the backdrop and
-     the refraction compresses all that noise into the rim, which silts the
-     drop up into a grey ball. Below it, the lens gets clean page content and
-     the grain simply lies over the top, the same as everywhere else. */
+  /* Very high so the droplet sits above nav, modals, everything. */
   z-index: 2147482000;
 
   /* The interference colours are mixed out of --accent rather than hard-coded,
