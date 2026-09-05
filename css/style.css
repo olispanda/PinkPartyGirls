@@ -1810,6 +1810,9 @@ html.has-water-cursor select {
   display: block;
 }
 
+/* Blur first, as the floor. If the engine can run the turbulence filter the
+   rule below replaces it with an actual bend; if it can't, this is what
+   stays. Both are wanted — the bend alone doesn't compress the rim. */
 #water-cursor.is-flat .wc-drop__edge--outer {
   -webkit-backdrop-filter: blur(6px) saturate(1.4) contrast(1.05);
   backdrop-filter: blur(6px) saturate(1.4) contrast(1.05);
@@ -1818,6 +1821,21 @@ html.has-water-cursor select {
 #water-cursor.is-flat .wc-drop__edge--mid {
   -webkit-backdrop-filter: blur(2px) saturate(1.4);
   backdrop-filter: blur(2px) saturate(1.4);
+}
+
+/* The filters carry their own blur, so these are a straight swap. Defined in
+   js/water-cursor.js out of feTurbulence rather than a painted map, because
+   WebKit won't resolve feImage — measured, not assumed. */
+@supports (backdrop-filter: url(#wc-turb-outer)) or (-webkit-backdrop-filter: url(#wc-turb-outer)) {
+  #water-cursor.is-flat .wc-drop__edge--outer {
+    -webkit-backdrop-filter: url(#wc-turb-outer) saturate(1.4) contrast(1.05);
+    backdrop-filter: url(#wc-turb-outer) saturate(1.4) contrast(1.05);
+  }
+
+  #water-cursor.is-flat .wc-drop__edge--mid {
+    -webkit-backdrop-filter: url(#wc-turb-mid) saturate(1.4);
+    backdrop-filter: url(#wc-turb-mid) saturate(1.4);
+  }
 }
 
 /* With no bend under it the film is the only thing shaping the glass, so it

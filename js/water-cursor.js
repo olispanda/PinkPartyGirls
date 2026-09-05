@@ -460,7 +460,53 @@
     return f;
   }
 
-  function installFilters(mapURL, aberration) {
+  /* A displacement filter that needs no feImage.
+
+     WebKit will not resolve feImage from a data URI — an element filtered
+     through one disappears entirely, which is measurable: feGaussianBlur and
+     feDisplacementMap driven by feTurbulence both render there, the same
+     filter driven by feImage does not. So the lens profile, which is a
+     painted map, is out of reach on that engine.
+
+     Turbulence is not a lens: it wobbles rather than magnifies. But it is a
+     real bend of real page content, and applied through rings of increasing
+     strength it gives the thing a lens reads like — calm in the middle,
+     churning at the rim. That is what the fallback uses. */
+  function buildTurbFilter(id, scale, blur) {
+    var f = el("filter", {
+      id: id,
+      x: "-15%",
+      y: "-15%",
+      width: "130%",
+      height: "130%",
+      "color-interpolation-filters": "sRGB"
+    });
+    f.appendChild(
+      el("feTurbulence", {
+        type: "fractalNoise",
+        baseFrequency: "0.012",
+        numOctaves: "2",
+        seed: "9",
+        result: "t"
+      })
+    );
+    f.appendChild(
+      el("feDisplacementMap", {
+        in: "SourceGraphic",
+        in2: "t",
+        scale: scale,
+        xChannelSelector: "R",
+        yChannelSelector: "G",
+        result: "bent"
+      })
+    );
+    // Kept inside the same filter: if the engine can't run it, we lose the
+    // blur along with the bend rather than ending up with a half-effect.
+    if (blur) f.appendChild(el("feGaussianBlur", { in: "bent", stdDeviation: blur }));
+    return f;
+  }
+
+  function ensureDefs() {
     if (!defs) {
       var svg = el("svg", { "aria-hidden": "true", focusable: "false" });
       svg.id = "water-cursor-defs";
@@ -468,9 +514,24 @@
       svg.appendChild(defs);
       document.body.appendChild(svg);
     }
-    while (defs.firstChild) defs.removeChild(defs.firstChild);
-    defs.appendChild(buildFilter("wc-refract", SIZE, REFRACT, mapURL, aberration));
-    defs.appendChild(buildFilter("wc-refract-sat", SAT_SIZE, SAT_REFRACT, mapURL, aberration));
+    return defs;
+  }
+
+  // The turbulence pair is always defined: they cost nothing unrendered, and
+  // the fallback path needs them whether or not the painted map worked out.
+  function installTurbFilters() {
+    var d = ensureDefs();
+    if (d.querySelector("#wc-turb-outer")) return;
+    d.appendChild(buildTurbFilter("wc-turb-outer", 26, 3));
+    d.appendChild(buildTurbFilter("wc-turb-mid", 11, 1));
+  }
+
+  function installFilters(mapURL, aberration) {
+    var d = ensureDefs();
+    var old = d.querySelectorAll("#wc-refract, #wc-refract-sat");
+    for (var i = 0; i < old.length; i++) d.removeChild(old[i]);
+    d.appendChild(buildFilter("wc-refract", SIZE, REFRACT, mapURL, aberration));
+    d.appendChild(buildFilter("wc-refract-sat", SAT_SIZE, SAT_REFRACT, mapURL, aberration));
   }
 
   /* ---- DOM --------------------------------------------------------------
@@ -550,6 +611,7 @@
     // The hue picker (js/pink-egg.js) recolours --accent; the texture is
     // already rasterised by then, so it has to be repainted.
     document.addEventListener("ppg:accent-change", paintFilm);
+    installTurbFilters();
     var mapURL = canRefract ? buildMap() : null;
     if (mapURL) {
       mapCache = mapURL; // kept so a later step-down doesn't rebuild it
