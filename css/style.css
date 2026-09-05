@@ -1693,3 +1693,256 @@ html.js-anim .reveal.is-in {
     animation: none;
   }
 }
+
+/* ==========================================================================
+   Water cursor (see js/water-cursor.js)
+   A droplet of water in place of the pointer. The bend in the page behind it
+   is a real refraction — an SVG displacement map running as backdrop-filter,
+   built in JS — so everything here is only the glass on top of it: rim light,
+   specular highlights, and the soap-film iridescence around the edge.
+   The html class is added by the script, so without JS (or on touch, or under
+   prefers-reduced-motion) the native cursor is never hidden.
+   ========================================================================== */
+html.has-water-cursor,
+html.has-water-cursor body,
+html.has-water-cursor a,
+html.has-water-cursor button,
+html.has-water-cursor .btn,
+html.has-water-cursor [role="button"],
+html.has-water-cursor summary,
+html.has-water-cursor label,
+html.has-water-cursor input[type="range"] {
+  cursor: none;
+}
+
+/* Typing needs a caret you can aim, so text fields keep a real cursor and the
+   droplet shrinks back out of the way instead (see .is-over-text). */
+html.has-water-cursor input:not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html.has-water-cursor textarea,
+html.has-water-cursor [contenteditable="true"] {
+  cursor: text;
+}
+
+html.has-water-cursor select {
+  cursor: default;
+}
+
+#water-cursor-defs {
+  position: fixed;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+#water-cursor {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  /* Above the film grain. Below it, the grain's overlay blend lights up over
+     the drop's own slight brightening and fills the circle with visible
+     noise; above it, the grain lands in the backdrop and gets refracted
+     along with everything else, which is what water would actually do. */
+  z-index: 2147483500;
+}
+
+/* Nothing on the wrapper may form a backdrop root — opacity below 1, a
+   filter, a mask, or contain: paint would all cut the droplet off from the
+   page behind it and leave the refraction rendering nothing at all. That is
+   why the fade lives in --wc-alpha on the children instead, and why
+   will-change lists transform only. */
+.wc-drop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  will-change: transform;
+}
+
+.wc-drop__lens,
+.wc-drop__gloss {
+  opacity: var(--wc-alpha, 0);
+}
+
+.wc-drop--main {
+  width: 132px;
+  height: 132px;
+}
+
+.wc-drop--sat {
+  width: 46px;
+  height: 46px;
+}
+
+#water-cursor.no-satellite .wc-drop--sat {
+  display: none;
+}
+
+/* The refracting body. The filter list runs left to right: bend the backdrop
+   first, then push saturation and light the way a water bead concentrates
+   what passes through it. */
+.wc-drop__lens {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  -webkit-backdrop-filter: url(#wc-refract) saturate(1.35) brightness(1.03);
+  backdrop-filter: url(#wc-refract) saturate(1.35) brightness(1.03);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 -10px 20px -14px rgba(255, 255, 255, 0.4),
+    0 14px 32px -20px rgba(0, 0, 0, 0.55);
+}
+
+.wc-drop--sat .wc-drop__lens {
+  -webkit-backdrop-filter: url(#wc-refract-sat) saturate(1.4) brightness(1.05);
+  backdrop-filter: url(#wc-refract-sat) saturate(1.4) brightness(1.05);
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.5),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
+    0 8px 18px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Where backdrop-filter won't take an SVG filter (Safari, Firefox) the bend
+   is gone, so lean on blur and saturation to keep it reading as a bubble. */
+#water-cursor.is-flat .wc-drop__lens {
+  -webkit-backdrop-filter: blur(7px) saturate(1.7) brightness(1.08);
+  backdrop-filter: blur(7px) saturate(1.7) brightness(1.08);
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(255, 255, 255, 0.02) 40%,
+    rgba(255, 255, 255, 0.12) 78%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+}
+
+/* Highlights sit above the lens so they stay crisp — a droplet's specular
+   catch doesn't get refracted along with the page behind it. */
+.wc-drop__gloss {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    /* tight specular catch — the light source */
+    radial-gradient(
+      ellipse 16% 11% at 30% 22%,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(255, 255, 255, 0.5) 45%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    /* the soft bloom around it */
+    radial-gradient(
+      circle at 32% 26%,
+      rgba(255, 255, 255, 0.16) 0%,
+      rgba(255, 255, 255, 0) 34%
+    ),
+    /* light bounced back up off the far wall of the drop */
+    radial-gradient(
+      ellipse 34% 20% at 63% 82%,
+      rgba(255, 255, 255, 0.24) 0%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    /* the wall itself, thickening toward the silhouette. Kept thin: on the
+       dark slides any wash across the middle reads as milky plastic rather
+       than water. */
+    radial-gradient(
+      circle at 50% 50%,
+      rgba(255, 255, 255, 0) 72%,
+      rgba(255, 255, 255, 0.14) 92%,
+      rgba(255, 255, 255, 0.04) 100%
+    );
+}
+
+/* Soap-film colour, masked to a ring so the middle of the drop stays clear.
+   It turns slowly, which is what sells it as a film rather than a decal. */
+.wc-drop__gloss::after {
+  content: "";
+  position: absolute;
+  inset: -2%;
+  border-radius: 50%;
+  background: conic-gradient(
+    from 200deg,
+    rgba(255, 92, 184, 0.55),
+    rgba(120, 224, 255, 0.5),
+    rgba(255, 244, 150, 0.45),
+    rgba(186, 128, 255, 0.55),
+    rgba(255, 92, 184, 0.55)
+  );
+  mix-blend-mode: screen;
+  opacity: 0.42;
+  -webkit-mask-image: radial-gradient(circle, transparent 55%, #000 84%, transparent 100%);
+  mask-image: radial-gradient(circle, transparent 55%, #000 84%, transparent 100%);
+  animation: wc-iris 11s linear infinite;
+}
+
+.wc-drop--sat .wc-drop__gloss::after {
+  opacity: 0.42;
+  animation-duration: 7s;
+}
+
+@keyframes wc-iris {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* Over a link the drop swells and its rim lights up — the same read as a
+   hover state, just made of water. */
+#water-cursor.is-over-link .wc-drop--main .wc-drop__lens {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.7),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.4),
+    inset 0 -14px 28px -14px rgba(255, 255, 255, 0.8),
+    0 18px 40px -18px rgba(0, 0, 0, 0.7);
+  transition: box-shadow 0.25s var(--ease-out, ease);
+}
+
+#water-cursor.is-over-link .wc-drop--main .wc-drop__gloss::after {
+  opacity: 0.75;
+}
+
+#water-cursor.is-over-text .wc-drop--main .wc-drop__gloss::after {
+  opacity: 0.3;
+}
+
+/* Click ripple: a ring of surface tension leaving the impact point. */
+.wc-splash {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 140px;
+  height: 140px;
+  pointer-events: none;
+}
+
+.wc-splash__ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.6);
+  opacity: 0;
+  transform: scale(0.28);
+}
+
+.wc-splash.is-on .wc-splash__ring {
+  animation: wc-ripple 0.52s cubic-bezier(0.16, 0.84, 0.32, 1) forwards;
+}
+
+@keyframes wc-ripple {
+  0% {
+    opacity: 0.75;
+    transform: scale(0.26);
+    border-width: 3px;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1);
+    border-width: 0.5px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #water-cursor {
+    display: none;
+  }
+}
