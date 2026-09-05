@@ -26,15 +26,35 @@
      Sizes are in CSS pixels. The droplet element itself never changes size
      (hover/idle states are transforms) so the filter's pixel units stay
      valid and the map is only ever built once.                            */
-  var SIZE = 132; // droplet diameter
+  var SIZE = 136; // droplet diameter
   var SAT_SIZE = 46; // trailing satellite bead
-  var MAP_RES = 192; // displacement map resolution (square)
-  var REFRACT = 50; // px of bend at the rim, main drop
-  var SAT_REFRACT = 18; // …and for the satellite
-  var ABERRATION = 0.035; // per-channel spread of the refraction (rainbow rim)
-  var LENS_POWER = 2.7; // >1 keeps the centre calm, bends late and hard
-  var LENS_ZOOM = 0.34; // share of the bend that is linear — the magnifying part
+  var MAP_RES = 288; // displacement map resolution (square)
+  /* REFRACT is the budget for how far a pixel can be pulled inward, and it
+     has a ceiling worth understanding: the drop can only show the part of
+     the page that its outermost sample still reaches. Push it too far and
+     everything past that radius is crushed into a thin unreadable ring while
+     the middle magnifies a tiny patch — which reads as an empty milky ball,
+     not as water. Around a third of the radius keeps the whole area behind
+     the drop visible, bent and enlarged. */
+  var REFRACT = 42; // px of bend at the rim, main drop
+  var SAT_REFRACT = 15; // …and for the satellite
+  var ABERRATION = 0.05; // per-channel spread of the refraction (rainbow rim)
+  var LENS_ZOOM = 0.5; // share of the bend that is linear — the magnifying part
+  var LENS_POWER = 2.2; // the mid-field falloff
+  var RIM_BITE = 0.3; // share of the curved part that piles up right at the rim
   var EDGE_FADE = 0.86; // where the bend feathers back to zero (0..1 of radius)
+
+  /* A perfectly symmetrical lens reads as CGI glass. Real water has a surface
+     that isn't quite even, so the map gets a little standing-wave structure:
+     two angular terms and one radial ripple, all small enough to keep the
+     magnification intact. This is most of what makes it look wet. */
+  var WAVE_ANG_1 = 0.075;
+  var WAVE_ANG_2 = 0.045;
+  var WAVE_RAD = 0.05;
+  /* Few and broad on purpose. Tight rings make the offset swing hard over a
+     handful of pixels, and anything fine behind the drop — hairlines, small
+     type — gets sampled away instead of bent. */
+  var WAVE_RINGS = 4.5;
 
   var STIFF = 0.17; // main spring
   var DAMP = 0.74;
@@ -99,11 +119,23 @@
           // otherwise the outline turns into a razor-sharp ring.
           var t = (1 - r) / (1 - EDGE_FADE);
           var feather = t >= 1 ? 1 : t <= 0 ? 0 : t * t * (3 - 2 * t);
-          // Two parts: a linear term, which is a plain magnifying glass, and
-          // a steep term that only bites near the rim, where a bead of water
-          // smears everything into a ring.
-          var mag =
-            (LENS_ZOOM * r + (1 - LENS_ZOOM) * Math.pow(r, LENS_POWER)) * feather;
+
+          // Three parts. A linear term is a plain magnifying glass. A curved
+          // term takes over through the middle distance. A very steep term on
+          // top of it piles up in the last stretch before the rim, which is
+          // what smears the surroundings into a compressed ring there.
+          var curve =
+            (1 - RIM_BITE) * Math.pow(r, LENS_POWER) + RIM_BITE * Math.pow(r, 6);
+          var mag = (LENS_ZOOM * r + (1 - LENS_ZOOM) * curve) * feather;
+
+          // Surface that isn't quite flat.
+          var th = Math.atan2(ny, nx);
+          mag *=
+            1 +
+            WAVE_ANG_1 * Math.sin(3 * th + 0.7) +
+            WAVE_ANG_2 * Math.sin(7 * th - 1.9) +
+            WAVE_RAD * Math.sin(r * WAVE_RINGS) * r;
+
           dx = -(nx / r) * mag;
           dy = -(ny / r) * mag;
         }
@@ -227,9 +259,14 @@
     wrap.className = "wc-drop " + cls;
     var lens = document.createElement("div");
     lens.className = "wc-drop__lens";
+    // Soap-film interference, drifting on its own between the refraction and
+    // the highlights.
+    var film = document.createElement("div");
+    film.className = "wc-drop__film";
     var gloss = document.createElement("div");
     gloss.className = "wc-drop__gloss";
     wrap.appendChild(lens);
+    wrap.appendChild(film);
     wrap.appendChild(gloss);
     return wrap;
   }
@@ -254,6 +291,10 @@
   root.appendChild(splash);
 
   function mount() {
+    // Sizes live in JS (the filter needs them in pixels), so hand them to CSS
+    // rather than repeating the numbers in the stylesheet.
+    root.style.setProperty("--wc-size", SIZE + "px");
+    root.style.setProperty("--wc-sat-size", SAT_SIZE + "px");
     document.body.appendChild(root);
     var mapURL = canRefract ? buildMap() : null;
     if (mapURL) {

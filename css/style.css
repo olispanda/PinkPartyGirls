@@ -1739,11 +1739,11 @@ html.has-water-cursor select {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  /* Above the film grain. Below it, the grain's overlay blend lights up over
-     the drop's own slight brightening and fills the circle with visible
-     noise; above it, the grain lands in the backdrop and gets refracted
-     along with everything else, which is what water would actually do. */
-  z-index: 2147483500;
+  /* Under the film grain. Above it, the grain lands inside the backdrop and
+     the refraction compresses all that noise into the rim, which silts the
+     drop up into a grey ball. Below it, the lens gets clean page content and
+     the grain simply lies over the top, the same as everywhere else. */
+  z-index: 2147482000;
 }
 
 /* Nothing on the wrapper may form a backdrop root — opacity below 1, a
@@ -1760,18 +1760,21 @@ html.has-water-cursor select {
 }
 
 .wc-drop__lens,
+.wc-drop__film,
 .wc-drop__gloss {
   opacity: var(--wc-alpha, 0);
 }
 
+/* Diameters come from js/water-cursor.js — the SVG filter needs them in
+   pixels, so the script owns the number and hands it over as a variable. */
 .wc-drop--main {
-  width: 132px;
-  height: 132px;
+  width: var(--wc-size, 136px);
+  height: var(--wc-size, 136px);
 }
 
 .wc-drop--sat {
-  width: 46px;
-  height: 46px;
+  width: var(--wc-sat-size, 46px);
+  height: var(--wc-sat-size, 46px);
 }
 
 #water-cursor.no-satellite .wc-drop--sat {
@@ -1816,6 +1819,84 @@ html.has-water-cursor select {
   );
 }
 
+/* Soap-film interference: the shifting colour in a bubble wall, which is
+   thinnest (and so most colourful) toward the rim.
+
+   Built entirely from off-centre ring gradients, with no mask and no blend
+   mode anywhere. That restriction is not cosmetic: a masked or blended child
+   inside this transformed wrapper cuts the sibling lens off from the page
+   and its backdrop-filter then refracts nothing at all. Everything above the
+   lens has to be plain alpha over plain background layers.
+
+   Each ring peaks at a different point on the circle, so the colours land in
+   bands rather than an even halo, and the whole layer turns slowly. */
+.wc-drop__film {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 42% 36%,
+      transparent 56%,
+      rgba(255, 92, 190, 0.4) 80%,
+      transparent 95%
+    ),
+    radial-gradient(
+      circle at 64% 66%,
+      transparent 58%,
+      rgba(112, 226, 255, 0.36) 82%,
+      transparent 96%
+    ),
+    radial-gradient(
+      circle at 58% 34%,
+      transparent 60%,
+      rgba(255, 238, 142, 0.26) 84%,
+      transparent 97%
+    ),
+    radial-gradient(
+      circle at 36% 64%,
+      transparent 58%,
+      rgba(190, 130, 255, 0.34) 83%,
+      transparent 96%
+    );
+  animation: wc-film-a 15s linear infinite;
+}
+
+/* A second set turning the other way. Where the two cross, the colour shifts
+   and drifts the way a real film does. */
+.wc-drop__film::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle at 52% 62%,
+      transparent 62%,
+      rgba(150, 255, 226, 0.3) 84%,
+      transparent 97%
+    ),
+    radial-gradient(
+      circle at 40% 48%,
+      transparent 64%,
+      rgba(255, 150, 210, 0.24) 86%,
+      transparent 98%
+    );
+  animation: wc-film-b 9.5s linear infinite reverse;
+}
+
+@keyframes wc-film-a {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+@keyframes wc-film-b {
+  to {
+    transform: rotate(1turn) scale(1.06);
+  }
+}
+
 /* Highlights sit above the lens so they stay crisp — a droplet's specular
    catch doesn't get refracted along with the page behind it. */
 .wc-drop__gloss {
@@ -1838,8 +1919,22 @@ html.has-water-cursor select {
     ),
     /* light bounced back up off the far wall of the drop */
     radial-gradient(
-      ellipse 34% 20% at 63% 82%,
-      rgba(255, 255, 255, 0.24) 0%,
+      ellipse 30% 16% at 63% 82%,
+      rgba(255, 255, 255, 0.15) 0%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    /* caustic: light gathered by the lens and thrown against the far wall,
+       a thin bright arc rather than a glow */
+    radial-gradient(
+      ellipse 34% 4.5% at 50% 90%,
+      rgba(255, 255, 255, 0.45) 0%,
+      rgba(255, 255, 255, 0.06) 60%,
+      rgba(255, 255, 255, 0) 100%
+    ),
+    /* a second, weaker source catching the top right */
+    radial-gradient(
+      ellipse 9% 6% at 72% 30%,
+      rgba(255, 255, 255, 0.4) 0%,
       rgba(255, 255, 255, 0) 100%
     ),
     /* the wall itself, thickening toward the silhouette. Kept thin: on the
@@ -1848,42 +1943,15 @@ html.has-water-cursor select {
     radial-gradient(
       circle at 50% 50%,
       rgba(255, 255, 255, 0) 72%,
-      rgba(255, 255, 255, 0.14) 92%,
-      rgba(255, 255, 255, 0.04) 100%
+      rgba(255, 255, 255, 0.1) 88%,
+      rgba(255, 255, 255, 0.26) 97%,
+      rgba(255, 255, 255, 0.06) 100%
     );
 }
 
-/* Soap-film colour, masked to a ring so the middle of the drop stays clear.
-   It turns slowly, which is what sells it as a film rather than a decal. */
-.wc-drop__gloss::after {
-  content: "";
-  position: absolute;
-  inset: -2%;
-  border-radius: 50%;
-  background: conic-gradient(
-    from 200deg,
-    rgba(255, 92, 184, 0.55),
-    rgba(120, 224, 255, 0.5),
-    rgba(255, 244, 150, 0.45),
-    rgba(186, 128, 255, 0.55),
-    rgba(255, 92, 184, 0.55)
-  );
-  mix-blend-mode: screen;
-  opacity: 0.42;
-  -webkit-mask-image: radial-gradient(circle, transparent 55%, #000 84%, transparent 100%);
-  mask-image: radial-gradient(circle, transparent 55%, #000 84%, transparent 100%);
-  animation: wc-iris 11s linear infinite;
-}
-
-.wc-drop--sat .wc-drop__gloss::after {
-  opacity: 0.42;
+.wc-drop--sat .wc-drop__film {
   animation-duration: 7s;
-}
-
-@keyframes wc-iris {
-  to {
-    transform: rotate(1turn);
-  }
+  opacity: calc(var(--wc-alpha, 0) * 0.8);
 }
 
 /* Over a link the drop swells and its rim lights up — the same read as a
@@ -1897,12 +1965,13 @@ html.has-water-cursor select {
   transition: box-shadow 0.25s var(--ease-out, ease);
 }
 
-#water-cursor.is-over-link .wc-drop--main .wc-drop__gloss::after {
-  opacity: 0.75;
+/* No filter, mask or blend on this layer — see the note on .wc-drop__film. */
+#water-cursor.is-over-link .wc-drop--main .wc-drop__film {
+  opacity: calc(var(--wc-alpha, 0) * 1.15);
 }
 
-#water-cursor.is-over-text .wc-drop--main .wc-drop__gloss::after {
-  opacity: 0.3;
+#water-cursor.is-over-text .wc-drop--main .wc-drop__film {
+  opacity: calc(var(--wc-alpha, 0) * 0.5);
 }
 
 /* Click ripple: a ring of surface tension leaving the impact point. */
