@@ -1762,20 +1762,17 @@ html.has-water-cursor select {
      is what gives glass its depth and lets the fringes read. */
   -webkit-backdrop-filter: url(#wc-refract) saturate(1.55) contrast(1.1) brightness(0.94);
   backdrop-filter: url(#wc-refract) saturate(1.55) contrast(1.1) brightness(0.94);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.22),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.12),
-    inset 0 0 16px -4px rgba(0, 0, 0, 0.45),
-    0 14px 32px -20px rgba(0, 0, 0, 0.55);
+  /* No 1px inset ring here. A hairline traces the circle and that outline is
+     the single clearest tell that it was drawn — a real bubble has a wide
+     soft shoulder instead, which the gloss layer provides. */
+  box-shadow: 0 14px 34px -22px rgba(0, 0, 0, 0.5);
 }
 
 .wc-drop--sat .wc-drop__lens {
-  -webkit-backdrop-filter: url(#wc-refract-sat) saturate(1.4) brightness(1.05);
-  backdrop-filter: url(#wc-refract-sat) saturate(1.4) brightness(1.05);
-  box-shadow:
-    inset 0 1px 1px rgba(255, 255, 255, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.18),
-    0 8px 18px -12px rgba(0, 0, 0, 0.5);
+  -webkit-backdrop-filter: url(#wc-refract-sat) saturate(1.45) contrast(1.06) brightness(0.97);
+  backdrop-filter: url(#wc-refract-sat) saturate(1.45) contrast(1.06) brightness(0.97);
+  /* No hairline here either — see the main lens. */
+  box-shadow: 0 8px 18px -14px rgba(0, 0, 0, 0.45);
 }
 
 /* Where backdrop-filter won't take an SVG filter (Safari, Firefox) the bend
@@ -1876,14 +1873,18 @@ html.has-water-cursor select {
       rgba(255, 255, 255, 0.04) 55%,
       rgba(255, 255, 255, 0) 100%
     ),
-    /* the rim, kept to a hairline so it draws the silhouette without
-       fogging the face. Tinted, unlike the speculars — those stay white
-       because they are the light source itself. */
+    /* The shoulder: light grazing the wall at a shallow angle, brightening
+       gradually from well inside the silhouette and falling away again
+       before the edge. Wide and gradual is the whole point — any stop that
+       climbs quickly here reads as an outline. Tinted, unlike the
+       speculars, which stay white because they are the light itself. */
     radial-gradient(
       circle at 50% 50%,
-      rgba(255, 255, 255, 0) 90%,
-      color-mix(in srgb, var(--wc-rim) 20%, transparent) 96.5%,
-      color-mix(in srgb, var(--wc-rim) 4%, transparent) 100%
+      rgba(255, 255, 255, 0) 55%,
+      color-mix(in srgb, var(--wc-rim) 6%, transparent) 78%,
+      color-mix(in srgb, var(--wc-rim) 15%, transparent) 92%,
+      color-mix(in srgb, var(--wc-rim) 9%, transparent) 98%,
+      rgba(255, 255, 255, 0) 100%
     );
 }
 

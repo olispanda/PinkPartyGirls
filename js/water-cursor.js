@@ -61,8 +61,8 @@
      two angular terms and one radial ripple, all small enough to keep the
      magnification intact. This is most of what makes it look wet. */
   var FILM_RES = 200; // interference texture resolution
-  var FILM_ALPHA = 0.3; // ceiling on how strongly the film shows
-  var FILM_HUE_SWING = 44; // degrees either side of --accent the colour roams
+  var FILM_ALPHA = 0.34; // ceiling on how strongly the film shows
+  var FILM_HUE_SWING = 58; // degrees either side of --accent the colour roams
 
   var WAVE_ANG_1 = 0.075;
   var WAVE_ANG_2 = 0.045;
@@ -206,10 +206,10 @@
     if (!cx) return null;
 
     var rnd = mulberry32(seed);
-    var n1 = latticeNoise(4, rnd); // broad swirls
-    var n2 = latticeNoise(9, rnd); // finer marbling
-    var n3 = latticeNoise(19, rnd); // the last bit of detail
-    var nA = latticeNoise(6, rnd); // separate field for density
+    var n1 = latticeNoise(3, rnd); // long, flowing swirls
+    var n2 = latticeNoise(7, rnd); // secondary marbling
+    var n3 = latticeNoise(13, rnd); // the last bit of detail
+    var nA = latticeNoise(5, rnd); // separate field for density
 
     var img = cx.createImageData(N, N);
     var d = img.data;
@@ -229,31 +229,31 @@
           continue;
         }
 
-        var n = 0.5 * n1(u, v) + 0.32 * n2(u, v) + 0.18 * n3(u, v);
+        // Weighted toward the coarsest octave: the reference's swirls are
+        // long and flowing, and letting the fine octaves carry much weight is
+        // what turned this into mottled speckle.
+        var n = 0.62 * n1(u, v) + 0.27 * n2(u, v) + 0.11 * n3(u, v);
 
         // Thickness → colour. Cycling the hue through a sine is what puts the
-        // colour in bands the way interference does; a few turns across the
-        // noise range gives several bands rather than one smooth sweep, and
-        // holding the swing near the accent keeps the drop pink, not rainbow.
-        var h = hue + Math.sin(n * Math.PI * 3.6 + 0.6) * FILM_HUE_SWING;
-        var sat = 0.66 + 0.3 * Math.sin(n * Math.PI * 4.4);
-        // Deliberately dark. Bright film turns the drop milky; on the
-        // reference the swirls sit only a little above the background and
-        // read as tinted glass rather than paint.
-        var lig = 0.38 + 0.2 * Math.sin(n * Math.PI * 2.6 + 1.2);
-        var rgb = hslToRgb(h, Math.max(0.3, Math.min(0.98, sat)), Math.max(0.16, Math.min(0.62, lig)));
+        // colour in bands the way interference does; holding the swing near
+        // the accent keeps the drop pink rather than rainbow.
+        var h = hue + Math.sin(n * Math.PI * 2.7 + 0.6) * FILM_HUE_SWING;
+        // Pale and washed out. A soap wall reflects most of what hits it, so
+        // the film sits above its background as pearl rather than below it as
+        // dirt — saturated mid-tones were reading as grime on the pink slides.
+        var sat = 0.34 + 0.24 * Math.sin(n * Math.PI * 3.3);
+        var lig = 0.74 + 0.13 * Math.sin(n * Math.PI * 2.1 + 1.2);
+        var rgb = hslToRgb(h, Math.max(0.06, Math.min(0.62, sat)), Math.max(0.58, Math.min(0.9, lig)));
 
-        // A bubble wall shows more colour toward the rim, where the line of
-        // sight passes through more of it, and the very edge fades out so the
-        // texture never draws a hard ring.
-        var inner = (r - 0.22) / 0.6;
-        inner = inner <= 0 ? 0 : inner >= 1 ? 1 : inner * inner * (3 - 2 * inner);
-        var outer = (1 - r) / 0.09;
+        // Present across the whole face, a little stronger toward the rim
+        // where the line of sight passes through more of the wall, and faded
+        // out over a wide margin at the edge so there is no ring.
+        var inner = 0.22 + 0.78 * (r <= 0 ? 0 : r >= 0.92 ? 1 : (r / 0.92) * (r / 0.92) * (3 - 2 * (r / 0.92)));
+        var outer = (1 - r) / 0.16;
         outer = outer <= 0 ? 0 : outer >= 1 ? 1 : outer * outer * (3 - 2 * outer);
-        // Banding in the opacity as well as the colour. Interference reads as
-        // distinct fringes, not an even haze, and letting the gaps go thin
-        // is what separates them.
-        var density = (0.3 + 0.7 * nA(u, v)) * (0.45 + 0.55 * Math.abs(Math.sin(n * Math.PI * 3.2)));
+        // Gentle banding in the opacity as well as the colour, but nowhere
+        // near enough to break the field into separate blobs.
+        var density = (0.55 + 0.45 * nA(u, v)) * (0.68 + 0.32 * Math.abs(Math.sin(n * Math.PI * 2.4)));
 
         d[i] = rgb[0];
         d[i + 1] = rgb[1];
