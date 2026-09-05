@@ -120,7 +120,7 @@
     ctx.translate(px, py);
 
     ctx.globalCompositeOperation = "source-over";
-    drawField(0.4, 24);
+    drawField(0.55, 24);
 
     ctx.restore();
     ctx.globalAlpha = 1;
@@ -130,7 +130,7 @@
   if (reduceMotion) {
     var once = function () {
       if (!vw) return requestAnimationFrame(once);
-      drawField(0.4, 24);
+      drawField(0.55, 24);
     };
     once();
     return;
