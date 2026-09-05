@@ -185,11 +185,27 @@
   }
 
   function positionPicker(el, anchor) {
+    // Viewport-relative (the popover is position: fixed, see style.css) so
+    // this is correct for chips in normal flow *and* chips inside a
+    // position: fixed ancestor (e.g. the "Pink" in the footer) — for a fixed
+    // ancestor, adding scrollY used to push the popover below the fold since
+    // rect.bottom there is already a viewport coordinate, not a document one.
     var r = anchor.getBoundingClientRect();
-    var top = window.scrollY + r.bottom + 8;
-    var left = window.scrollX + r.left;
-    var maxLeft = window.scrollX + document.documentElement.clientWidth - 232 - 12;
+    var vh = document.documentElement.clientHeight;
+    var vw = document.documentElement.clientWidth;
+    var h = el.offsetHeight; // el is already appended to the DOM at this point
+
+    // Flip above the chip when there isn't room below (e.g. a chip near the
+    // bottom edge, like the one in the fixed footer) instead of letting the
+    // popover run off the bottom of the screen.
+    var top = r.bottom + 8;
+    if (top + h > vh) top = r.top - h - 8;
+    top = Math.max(8, top);
+
+    var left = r.left;
+    var maxLeft = vw - 232 - 12;
     if (left > maxLeft) left = Math.max(8, maxLeft);
+
     el.style.top = top + "px";
     el.style.left = left + "px";
   }

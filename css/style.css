@@ -1517,7 +1517,12 @@ html.js-anim .reveal.is-in {
 }
 
 .pink-picker {
-  position: absolute;
+  /* fixed (viewport-relative), not absolute (document-relative) — a chip
+     can sit inside a position: fixed ancestor (the footer), where an
+     absolute + scrollY offset put this off-screen below the fold. It
+     already closes on scroll (see boot()), so not tracking scroll here
+     costs nothing. */
+  position: fixed;
   z-index: 500;
   width: 232px;
   background: var(--surface-card);
