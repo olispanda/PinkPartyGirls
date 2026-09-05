@@ -80,6 +80,8 @@
      type — gets sampled away instead of bent. */
   var WAVE_RINGS = 4.5;
 
+  var SETTLE_MS = 4000; // ignore frame times until the page has settled
+
   var STIFF = 0.17; // main spring
   var DAMP = 0.74;
   var SAT_STIFF = 0.075; // satellite lags noticeably further behind
@@ -765,13 +767,20 @@
         "rad)";
     }
 
-    // The pointer version only measures while it is actually travelling; the
-    // ambient one barely moves, so it watches continuously — its expensive
-    // moments are the scrolls, not its own drift.
-    if ((moving || ambient) && quality > 0) {
-      if (dt > 26) slowFrames++;
-      else slowFrames = Math.max(0, slowFrames - 1);
-      if (slowFrames > 45) degrade();
+    /* The pointer version only measures while it is actually travelling; the
+       ambient one barely moves, so it watches continuously — its expensive
+       moments are the scrolls, not its own drift.
+
+       It also waits a few seconds first and judges by a slacker threshold.
+       Page load is the worst stretch a phone has — video decoding, images,
+       fonts — and stepping down there condemned it to the flat fallback for
+       the rest of the visit over frames that had nothing to do with the
+       drop. The step-down is permanent, so it should take real, sustained
+       slowness to trigger. */
+    if ((moving || ambient) && quality > 0 && now - t0 > SETTLE_MS) {
+      if (dt > (ambient ? 34 : 26)) slowFrames++;
+      else slowFrames = Math.max(0, slowFrames - 2);
+      if (slowFrames > (ambient ? 120 : 45)) degrade();
     }
 
     requestAnimationFrame(frame);
