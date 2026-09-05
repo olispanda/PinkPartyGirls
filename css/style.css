@@ -121,6 +121,12 @@ body {
   background: radial-gradient(ellipse 900px 700px at 100% 0%, color-mix(in srgb, var(--accent) 28%, transparent), transparent 65%), var(--surface);
   background-repeat: no-repeat;
   background-attachment: fixed;
+  /* iOS Safari barely supports background-attachment: fixed — combined with
+     viewport-fit=cover and the dynamic address bar, the fixed gradient can
+     detach from the safe-area edges and leave a flat, mismatched strip
+     behind the status bar / home indicator instead of extending under it.
+     Touch devices get the (visually identical, static hero) scrolling
+     attachment instead; see the two other "fixed" wash gradients below. */
   color: var(--text);
   font-family: var(--font-body);
   font-size: 1rem;
@@ -610,6 +616,20 @@ html.snap-page {
   background: radial-gradient(ellipse 1100px 850px at 100% 0%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%), rgba(9, 8, 9, 0.45);
   background-repeat: no-repeat;
   background-attachment: fixed;
+}
+
+/* Touch devices: drop "fixed" attachment on every wash gradient (body,
+   .slide--dark, .slide-home__overlay). iOS Safari's shaky support for it is
+   what left the pink wash / grain not actually reaching behind the status
+   bar and home-indicator safe areas despite viewport-fit=cover — "scroll"
+   paints correctly there and looks identical, since these are static washes
+   with no visible parallax to begin with. */
+@media (pointer: coarse) {
+  body,
+  .slide--dark,
+  .slide-home__overlay {
+    background-attachment: scroll;
+  }
 }
 
 .slide-home__logo {
