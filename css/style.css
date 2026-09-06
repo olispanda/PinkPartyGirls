@@ -178,16 +178,18 @@ p {
 }
 
 /* 12-column grid ---------------------------------------------------------
-   Side padding matches --gutter (the page content inset) so nav brand and
-   footer marks line up with the content column. 20px gutter between tracks.
-   Use .grid-12 as the layout container and .col-start-N / .col-span-N. */
+   Same width + centering as .container, so the nav brand and footer marks
+   line up with the page content column at every viewport width (a full-bleed
+   grid drifted left of the centred 1200px content on wide screens).
+   20px gutter between tracks. Use .grid-12 as the layout container and the
+   .col-start-N / .col-span-N helpers. */
 
 .grid-12 {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   column-gap: var(--grid-gutter);
-  width: 100%;
-  padding-inline: var(--gutter);
+  width: min(1200px, 100% - var(--gutter) * 2);
+  margin-inline: auto;
 }
 
 .col-span-1  { grid-column: span 1; }
