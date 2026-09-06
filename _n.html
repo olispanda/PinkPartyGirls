@@ -112,17 +112,20 @@
   <script src="/js/pink-egg.js"></script>
   <script src="/js/water-cursor.js"></script>
 
+<div id="probe" style="position:fixed;bottom:0;left:0;z-index:99999">pending</div>
 <script>
 addEventListener("load", function(){
-  function r(el){ if(!el) return "n/a"; var b=el.getBoundingClientRect(); return Math.round(b.left)+".."+Math.round(b.right); }
-  var out = [
-    "brand      " + r(document.querySelector(".nav__brand")),
-    "menu       " + r(document.querySelector(".nav__links")),
-    "container  " + r(document.querySelector(".page-header .container")),
-    "footcopy   " + r(document.querySelector(".footer__copy")),
-    "footsocial " + r(document.querySelector(".footer__social"))
-  ].join(" | ");
-  document.title = "MEASURE " + out;
+  setTimeout(function(){
+    function r(el){ if(!el) return "n/a"; var b=el.getBoundingClientRect(); return Math.round(b.left)+".."+Math.round(b.right); }
+    document.getElementById("probe").textContent = "MEASURE vw=" + document.documentElement.clientWidth + " | " + [
+      "brand " + r(document.querySelector(".nav__brand")),
+      "menu " + r(document.querySelector(".nav__links")),
+      "h1 " + r(document.querySelector(".page-header .section-title")),
+      "lineup " + r(document.querySelector(".section-alt .grid--4")),
+      "footcopy " + r(document.querySelector(".footer__copy")),
+      "footsocial " + r(document.querySelector(".footer__social"))
+    ].join(" | ");
+  }, 300);
 });
 </script>
 </body>

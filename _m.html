@@ -108,19 +108,21 @@
   <script src="/js/hero-gl.js"></script>
   <script src="/js/water-cursor.js"></script>
 
+<div id="probe" style="position:fixed;bottom:0;left:0;z-index:99999">pending</div>
 <script>
 addEventListener("load", function(){
-  function r(el){ if(!el) return "n/a"; var b=el.getBoundingClientRect(); return Math.round(b.left)+".."+Math.round(b.right); }
-  var out = [
-    "brand      " + r(document.querySelector(".nav__brand")),
-    "menu       " + r(document.querySelector(".nav__links")),
-    "heading    " + r(document.querySelector(".slide-events__heading")),
-    "eventlist  " + r(document.querySelector(".slide-events__list")),
-    "statement  " + r(document.querySelector(".slide-statement__heading")),
-    "footcopy   " + r(document.querySelector(".mini-footer__copy")),
-    "footsocial " + r(document.querySelector(".mini-footer__social"))
-  ].join(" | ");
-  document.title = "MEASURE " + out;
+  setTimeout(function(){
+    function r(el){ if(!el) return "n/a"; var b=el.getBoundingClientRect(); return Math.round(b.left)+".."+Math.round(b.right); }
+    document.getElementById("probe").textContent = "MEASURE vw=" + document.documentElement.clientWidth + " | " + [
+      "brand " + r(document.querySelector(".nav__brand")),
+      "menu " + r(document.querySelector(".nav__links")),
+      "statement " + r(document.querySelector(".slide-statement__heading")),
+      "events " + r(document.querySelector(".slide-events__heading")),
+      "list " + r(document.querySelector(".slide-events__list")),
+      "footcopy " + r(document.querySelector(".mini-footer__copy")),
+      "footsocial " + r(document.querySelector(".mini-footer__social"))
+    ].join(" | ");
+  }, 400);
 });
 </script>
 </body>

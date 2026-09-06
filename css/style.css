@@ -171,10 +171,33 @@ p {
   margin: 0;
 }
 
+/* The one content column. Its outer width is the same as .grid-12 and the
+   12 tracks inside .slide, and the padding then insets it by exactly one
+   track + one gutter — so the text on the subpages starts and ends on the
+   same lines as the nav brand, the menu and the footer marks (all of which
+   live in grid columns 2..12). Track width is (column width - 11 gutters)/12;
+   both percentages resolve against the same containing block, so they agree. */
 .container {
   width: min(1200px, 100% - var(--gutter) * 2);
+  /* Bootstrap is loaded before this file and gives .container a breakpoint
+     max-width (1140px from 1200px up, 960px from 992px up). Those cut into
+     the column at some widths — between 1200 and 1400 the text sat 27px
+     inside the nav — so the site's own width is the only one that counts. */
+  max-width: none;
   margin-inline: auto;
-  padding-inline: 0;
+  padding-inline: calc(
+    (min(1200px, 100% - var(--gutter) * 2) - var(--grid-gutter) * 11) / 12
+    + var(--grid-gutter)
+  );
+}
+
+/* Below the nav's mobile breakpoint the 12-column layout is gone — the nav
+   bar is a flex row, the snap slides are one full-width column and the
+   footers stack — so the content column runs edge to edge again. */
+@media (max-width: 860px) {
+  .container {
+    padding-inline: 0;
+  }
 }
 
 /* 12-column grid ---------------------------------------------------------
@@ -738,11 +761,20 @@ html.snap-page {
   }
 }
 
+/* Tablet band: the nav has already collapsed to a flex row that runs the
+   full width of the column, so the one-track inset the wide layout uses has
+   nothing left to line up with — the slides run edge to edge here too. */
 @media (min-width: 48rem) and (max-width: 860px) {
   .slide-home__logo,
   .slide-statement__heading,
-  .slide-events__heading {
-    grid-column: 2 / 12;
+  .slide-events__heading,
+  .slide-events__list,
+  .btn-dark-outline {
+    grid-column: 1 / 13;
+  }
+
+  .btn-dark-outline {
+    justify-self: start;
   }
 }
 

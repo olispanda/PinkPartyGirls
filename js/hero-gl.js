@@ -90,9 +90,15 @@
     " vec2 frag=vec2(vUv.x,1.0-vUv.y)*uRes;",
     " vec2 rel=frag-uBubble;",
     /* squash along the direction of travel, the way the CSS drop does */
+    /* Two frames of reference, and mixing them up is what made the bubble
+       look like it was spinning. The squash runs along the direction of
+       travel, so its axes rotate — but only the shape may use them. The
+       highlights and the film belong to the world: a lamp does not swing
+       round the glass because the glass moved sideways. */
     " vec2 ax=uSquashDir;vec2 ay=vec2(-ax.y,ax.x);",
     " vec2 loc=vec2(dot(rel,ax)/(1.0+uSquash),dot(rel,ay)/(1.0-uSquash*0.68));",
     " vec2 d=loc/uRadius;",
+    " vec2 dw=rel/uRadius;",
     " float r=length(d);",
     " vec3 col;float a=1.0;",
     " if(r<1.0&&uAlpha>0.004){",
@@ -105,7 +111,7 @@
     "  vec2 bend=normalize(d+vec2(0.0001))*prof*uRadius;",
     "  vec2 sp=frag-bend;",
     /* a little surface unrest so it doesn't read as machined glass */
-    "  float w=noise(d*2.3+uTime*0.06)-0.5;",
+    "  float w=noise(dw*2.3+uTime*0.06)-0.5;",
     "  sp+=normalize(d+vec2(0.0001))*w*uRadius*0.035;",
     /* three samples, split along the bend: the colour fringe */
     "  vec2 ca=normalize(d+vec2(0.0001))*uRadius*CHROMA*r;",
@@ -113,7 +119,7 @@
     "  vec4 bent=vec4(sR.r,sG.g,sB.b,max(sG.a,max(sR.a,sB.a)));",
     "  col=bent.rgb;a=bent.a;",
     /* soap film: thin at the rim, so that is where the colour sits */
-    "  float film=smoothstep(0.25,0.98,r)*(0.55+0.45*noise(d*1.7-uTime*0.05));",
+    "  float film=smoothstep(0.25,0.98,r)*(0.55+0.45*noise(dw*1.7-uTime*0.05));",
     "  vec3 tint=mix(uAccent,vec3(0.62,0.86,1.0),0.5+0.5*sin(r*7.0+uTime*0.35));",
     "  col=mix(col,col*0.75+tint*0.55,film*0.34);",
     /* rim shoulder, wide and soft — a hard ring is the giveaway */
@@ -123,11 +129,11 @@
        highlight is a small bright core inside a much wider, much fainter
        halo; one opaque blob is what reads as cartoon glass. */
     "  vec2 sc=vec2(-0.36,-0.42);",
-    "  float core=smoothstep(0.09,0.0,distance(d,sc));",
-    "  float halo=smoothstep(0.46,0.02,distance(d,sc));",
-    "  float second=smoothstep(0.07,0.0,distance(d,vec2(0.42,-0.26)));",
+    "  float core=smoothstep(0.09,0.0,distance(dw,sc));",
+    "  float halo=smoothstep(0.46,0.02,distance(dw,sc));",
+    "  float second=smoothstep(0.07,0.0,distance(dw,vec2(0.42,-0.26)));",
     /* the caustic is a flattened arc against the far wall, not a disc */
-    "  float caustic=smoothstep(0.20,0.0,distance(d*vec2(1.0,2.7),vec2(0.05,0.70)*vec2(1.0,2.7)));",
+    "  float caustic=smoothstep(0.20,0.0,distance(dw*vec2(1.0,2.7),vec2(0.05,0.70)*vec2(1.0,2.7)));",
     "  float lit=0.62*core+0.10*halo+0.22*second+0.20*caustic;",
     "  col+=vec3(lit);a=max(a,lit);",
     /* smoothstep needs its edges in ascending order — reversed, the result
