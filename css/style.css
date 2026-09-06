@@ -178,11 +178,11 @@ p {
 }
 
 /* 12-column grid ---------------------------------------------------------
-   Same width + centering as .container, so the nav brand and footer marks
-   line up with the page content column at every viewport width (a full-bleed
-   grid drifted left of the centred 1200px content on wide screens).
-   20px gutter between tracks. Use .grid-12 as the layout container and the
-   .col-start-N / .col-span-N helpers. */
+   One content column for the whole site: same width + centering as
+   .container and as the 12 tracks inside .slide, so the nav brand and the
+   footer marks land on the same columns as the page content at every
+   viewport width. 20px gutter between tracks. Use .grid-12 as the layout
+   container and the .col-start-N / .col-span-N helpers. */
 
 .grid-12 {
   display: grid;
@@ -576,6 +576,12 @@ html.snap-page {
   align-content: safe center;
   position: relative;
   padding: calc(var(--nav-height) + 1.5rem) var(--gutter);
+  /* The slide stays full-bleed (video, gradient wash, snap background), but
+     its 12 tracks are capped and centred exactly like .container / .grid-12:
+     max(gutter, half the overflow past 1200px). Without this the slide grid
+     was full-bleed while nav + footer were capped, so on wide screens the
+     brand mark and the menu drifted off the content columns. */
+  padding-inline: max(var(--gutter), (100% - 1200px) / 2);
 }
 
 /* Snap to each slide top, but not so hard that a taller-than-screen slide
@@ -2080,12 +2086,16 @@ html.has-water-cursor select {
    what tells the shader where to draw the wordmark. Hence visibility rather
    than display — a removed element has no box to measure.
    ========================================================================== */
-.slide-home__gl {
-  position: absolute;
+.hero-gl {
+  position: fixed;
   inset: 0;
   width: 100%;
   height: 100%;
-  z-index: 1;
+  /* Above the page content so the bubble floats over every section, but
+     below the fixed nav (z-index 200) — the canvas is opaque where it draws
+     the hero, and over the top it would simply cover the menu. The cost is
+     that the bubble passes behind the bar rather than over it. */
+  z-index: 199;
   pointer-events: none;
 }
 

@@ -34,6 +34,7 @@
     "uniform vec2 uRes;",
     "uniform vec2 uVideoRes;",
     "uniform vec4 uLogoRect;",
+    "uniform vec4 uHeroRect;",
     "uniform vec2 uBubble;",
     "uniform float uRadius;",
     "uniform float uAlpha;",
@@ -60,23 +61,30 @@
     " return (frag/res-0.5)*s+0.5;}",
 
     /* The hero as it looks without the bubble: greyscale video, the pink
-       wash from the top right, then the wordmark. */
-    "vec3 scene(vec2 frag){",
+       wash from the top right, then the wordmark.
+
+       The canvas now covers the whole page rather than just the hero, so
+       the bubble can travel down through the other sections. Outside the
+       hero rectangle this returns nothing at all — alpha zero — and the
+       page below shows through untouched. */
+    "vec4 scene(vec2 frag){",
+    " vec2 h=frag-uHeroRect.xy;",
+    " if(h.x<0.0||h.y<0.0||h.x>uHeroRect.z||h.y>uHeroRect.w) return vec4(0.0);",
     " vec3 col=vec3(0.035,0.031,0.035);",
     " if(uHasVideo>0.5){",
-    "  vec2 vuv=coverUV(frag,uRes,uVideoRes);",
+    "  vec2 vuv=coverUV(h,uHeroRect.zw,uVideoRes);",
     "  vec3 v=texture2D(uVideo,vuv).rgb;",
     "  float g=dot(v,vec3(0.299,0.587,0.114));",
     "  g=clamp((g-0.5)*1.05+0.5,0.0,1.0);",
     "  col=vec3(g);}",
     " col=mix(col,vec3(0.035,0.031,0.035),0.45);",
-    " float d=distance(frag,vec2(uRes.x,0.0))/(uRes.x*1.05);",
+    " float d=distance(h,vec2(uHeroRect.z,0.0))/(uHeroRect.z*1.05);",
     " col=mix(col,uAccent,0.55*(1.0-smoothstep(0.0,1.0,d)));",
     " vec2 luv=(frag-uLogoRect.xy)/uLogoRect.zw;",
     " if(luv.x>=0.0&&luv.x<=1.0&&luv.y>=0.0&&luv.y<=1.0){",
     "  float a=texture2D(uLogo,luv).a;",
     "  col=mix(col,uAccent,a);}",
-    " return col;}",
+    " return vec4(col,1.0);}",
 
     "void main(){",
     " vec2 frag=vec2(vUv.x,1.0-vUv.y)*uRes;",
@@ -86,7 +94,7 @@
     " vec2 loc=vec2(dot(rel,ax)/(1.0+uSquash),dot(rel,ay)/(1.0-uSquash*0.68));",
     " vec2 d=loc/uRadius;",
     " float r=length(d);",
-    " vec3 col;",
+    " vec3 col;float a=1.0;",
     " if(r<1.0&&uAlpha>0.004){",
     /* the sphere: analytic normal of a hemisphere, same as the reference */
     "  vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
@@ -101,25 +109,37 @@
     "  sp+=normalize(d+vec2(0.0001))*w*uRadius*0.035;",
     /* three samples, split along the bend: the colour fringe */
     "  vec2 ca=normalize(d+vec2(0.0001))*uRadius*CHROMA*r;",
-    "  col=vec3(scene(sp+ca).r,scene(sp).g,scene(sp-ca).b);",
+    "  vec4 sR=scene(sp+ca),sG=scene(sp),sB=scene(sp-ca);",
+    "  vec4 bent=vec4(sR.r,sG.g,sB.b,max(sG.a,max(sR.a,sB.a)));",
+    "  col=bent.rgb;a=bent.a;",
     /* soap film: thin at the rim, so that is where the colour sits */
     "  float film=smoothstep(0.25,0.98,r)*(0.55+0.45*noise(d*1.7-uTime*0.05));",
     "  vec3 tint=mix(uAccent,vec3(0.62,0.86,1.0),0.5+0.5*sin(r*7.0+uTime*0.35));",
     "  col=mix(col,col*0.75+tint*0.55,film*0.34);",
     /* rim shoulder, wide and soft — a hard ring is the giveaway */
-    "  col+=vec3(0.16)*fres*smoothstep(0.55,1.0,r);",
-    /* speculars stay white: they are the light, not the surface */
-    "  float sp1=smoothstep(0.16,0.0,distance(d,vec2(-0.38,-0.44)));",
-    "  float sp2=smoothstep(0.09,0.0,distance(d,vec2(0.40,-0.30)));",
-    "  float caustic=smoothstep(0.30,0.0,distance(d,vec2(0.06,0.72)));",
-    "  col+=vec3(0.78)*sp1+vec3(0.28)*sp2+vec3(0.22)*caustic;",
+    "  float shoulder=fres*smoothstep(0.55,1.0,r);",
+    "  col+=vec3(0.14)*shoulder;a=max(a,shoulder*0.5);",
+    /* Speculars stay white — they are the light, not the surface. A real
+       highlight is a small bright core inside a much wider, much fainter
+       halo; one opaque blob is what reads as cartoon glass. */
+    "  vec2 sc=vec2(-0.36,-0.42);",
+    "  float core=smoothstep(0.09,0.0,distance(d,sc));",
+    "  float halo=smoothstep(0.46,0.02,distance(d,sc));",
+    "  float second=smoothstep(0.07,0.0,distance(d,vec2(0.42,-0.26)));",
+    /* the caustic is a flattened arc against the far wall, not a disc */
+    "  float caustic=smoothstep(0.20,0.0,distance(d*vec2(1.0,2.7),vec2(0.05,0.70)*vec2(1.0,2.7)));",
+    "  float lit=0.62*core+0.10*halo+0.22*second+0.20*caustic;",
+    "  col+=vec3(lit);a=max(a,lit);",
     /* smoothstep needs its edges in ascending order — reversed, the result
        is undefined by the spec, and the engines duly disagree: Chromium and
        WebKit gave the bubble, Firefox dropped it entirely. */
     "  float edge=1.0-smoothstep(0.985,1.0,r);",
-    "  col=mix(scene(frag),col,uAlpha*edge);",
-    " }else{col=scene(frag);}",
-    " gl_FragColor=vec4(col,1.0);}"
+    "  vec4 plain=scene(frag);",
+    "  float k=uAlpha*edge;",
+    "  col=mix(plain.rgb,col,k);a=mix(plain.a,a,k);",
+    " }else{vec4 p=scene(frag);col=p.rgb;a=p.a;}",
+    /* premultiplied: the canvas composites over the page below */
+    " gl_FragColor=vec4(col*a,a);}"
   ].join("\n");
 
   function compile(gl, type, src) {
@@ -145,11 +165,14 @@
     if (reduceMotion) return;
 
     var canvas = document.createElement("canvas");
-    canvas.className = "slide-home__gl";
+    canvas.className = "hero-gl";
     canvas.setAttribute("aria-hidden", "true");
+    /* Transparent, because it spans the whole viewport: the hero is drawn
+       into it, everything below shows through it, and the bubble travels
+       across both. */
     var gl =
-      canvas.getContext("webgl", { alpha: false, antialias: false, premultipliedAlpha: false }) ||
-      canvas.getContext("experimental-webgl", { alpha: false, antialias: false });
+      canvas.getContext("webgl", { alpha: true, antialias: false, premultipliedAlpha: true }) ||
+      canvas.getContext("experimental-webgl", { alpha: true, antialias: false });
     if (!gl) return; // no WebGL — the DOM hero stays exactly as it is
 
     var vs = compile(gl, gl.VERTEX_SHADER, VERT);
@@ -164,6 +187,8 @@
       return;
     }
     gl.useProgram(prog);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // premultiplied
 
     var buf = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buf);
@@ -174,7 +199,7 @@
 
     var U = {};
     [
-      "uVideo", "uLogo", "uRes", "uVideoRes", "uLogoRect", "uBubble",
+      "uVideo", "uLogo", "uRes", "uVideoRes", "uLogoRect", "uHeroRect", "uBubble",
       "uRadius", "uAlpha", "uTime", "uAccent", "uHasVideo", "uSquash", "uSquashDir"
     ].forEach(function (n) {
       U[n] = gl.getUniformLocation(prog, n);
@@ -223,7 +248,7 @@
     }
     loadLogo();
 
-    hero.appendChild(canvas);
+    document.body.appendChild(canvas);
     /* The DOM hero is not hidden yet. It is the fallback, and hiding it before
        anything has been drawn is how a failure here turns into a black hole
        where the hero used to be — which is exactly what happened the first
@@ -238,9 +263,8 @@
     var W = 0, H = 0, DPR = 1;
     function resize() {
       DPR = Math.min(window.devicePixelRatio || 1, 2);
-      var r = hero.getBoundingClientRect();
-      W = Math.max(1, Math.round(r.width));
-      H = Math.max(1, Math.round(r.height));
+      W = Math.max(1, Math.round(window.innerWidth));
+      H = Math.max(1, Math.round(window.innerHeight));
       canvas.width = Math.round(W * DPR);
       canvas.height = Math.round(H * DPR);
       canvas.style.width = W + "px";
@@ -262,9 +286,8 @@
     if (finePointer) {
       window.addEventListener("pointermove", function (e) {
         if (e.pointerType && e.pointerType !== "mouse") return;
-        var r = hero.getBoundingClientRect();
-        target.x = e.clientX - r.left;
-        target.y = e.clientY - r.top;
+        target.x = e.clientX;
+        target.y = e.clientY;
         alphaTarget = 1;
       }, { passive: true });
       document.addEventListener("pointerleave", function () { alphaTarget = 0; });
@@ -322,11 +345,12 @@
         }
       }
 
+      // Viewport coordinates now: the hero scrolls, the canvas does not.
       var lr = logoImg.getBoundingClientRect();
       var hr = hero.getBoundingClientRect();
       gl.uniform2f(U.uRes, W * DPR, H * DPR);
-      gl.uniform4f(U.uLogoRect,
-        (lr.left - hr.left) * DPR, (lr.top - hr.top) * DPR, lr.width * DPR, lr.height * DPR);
+      gl.uniform4f(U.uHeroRect, hr.left * DPR, hr.top * DPR, hr.width * DPR, hr.height * DPR);
+      gl.uniform4f(U.uLogoRect, lr.left * DPR, lr.top * DPR, lr.width * DPR, lr.height * DPR);
       gl.uniform2f(U.uBubble, pos.x * DPR, pos.y * DPR);
       gl.uniform1f(U.uRadius, (SIZE / 2) * DPR);
       gl.uniform1f(U.uAlpha, alpha);
@@ -336,6 +360,8 @@
       gl.uniform1f(U.uSquash, Math.min(speed * 0.011, 0.3));
       gl.uniform2f(U.uSquashDir, Math.cos(angle), Math.sin(angle));
 
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
       if (!painted) {
         painted = true;
