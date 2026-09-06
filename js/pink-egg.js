@@ -12,8 +12,8 @@
 
   var STORAGE_KEY = "ppg-pink-hue";
   var DEFAULT_HUE = 340; // matches --accent: #db2763
-  var MIN_HUE = 300; // magenta
-  var MAX_HUE = 355; // pink-red — stays "pink", never drifts into another color
+  var MIN_HUE = 310; // magenta-pink
+  var MAX_HUE = 344; // rose — anything warmer starts reading as plain red
   var SAT = 71;
   var LIGHT = 51;
 
@@ -24,7 +24,10 @@
   function getHue() {
     try {
       var v = parseInt(localStorage.getItem(STORAGE_KEY), 10);
-      if (!isNaN(v)) return Math.max(MIN_HUE, Math.min(MAX_HUE, v));
+      // In range → use it. Out of range (e.g. a red hue saved before the
+      // range was tightened) → fall back to the brand pink rather than
+      // clamp to a still-too-warm edge.
+      if (!isNaN(v) && v >= MIN_HUE && v <= MAX_HUE) return v;
     } catch (e) {
       /* localStorage unavailable (private mode etc.) — fall through */
     }

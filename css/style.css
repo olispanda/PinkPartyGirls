@@ -1603,7 +1603,7 @@ html.js-anim .reveal.is-in {
 .pink-picker input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(to right, hsl(300, 71%, 51%), hsl(355, 71%, 51%));
+  background: linear-gradient(to right, hsl(310, 71%, 51%), hsl(344, 71%, 51%));
 }
 
 .pink-picker input[type="range"]::-webkit-slider-thumb {
@@ -1622,7 +1622,7 @@ html.js-anim .reveal.is-in {
 .pink-picker input[type="range"]::-moz-range-track {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(to right, hsl(300, 71%, 51%), hsl(355, 71%, 51%));
+  background: linear-gradient(to right, hsl(310, 71%, 51%), hsl(344, 71%, 51%));
 }
 
 .pink-picker input[type="range"]::-moz-range-thumb {
