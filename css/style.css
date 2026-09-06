@@ -2012,3 +2012,40 @@ html.has-water-cursor select {
 #water-cursor.is-ambient .wc-splash {
   display: none;
 }
+
+/* The copy-of-the-page lens, used where backdrop-filter can't run an SVG
+   filter (WebKit) and the drop is parked — see the clone lens section in
+   js/water-cursor.js. The filter lives here rather than on the inner copy so
+   the bend applies once, to the circle. */
+.wc-clone {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--wc-size, 172px);
+  height: var(--wc-size, 172px);
+  border-radius: 50%;
+  overflow: hidden;
+  pointer-events: none;
+  opacity: 0; /* driven per frame from js/water-cursor.js */
+  filter: url(#wc-lens-turb) saturate(1.45) contrast(1.05) brightness(0.99);
+  will-change: transform;
+}
+
+.wc-clone__inner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  will-change: transform;
+}
+
+/* With a real copy underneath, the blurred rings and the tinting backdrop
+   would only muddy it. */
+#water-cursor.has-clone-lens .wc-drop__edge {
+  display: none;
+}
+
+#water-cursor.has-clone-lens .wc-drop--main .wc-drop__lens {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}

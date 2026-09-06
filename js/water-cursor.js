@@ -522,6 +522,7 @@
   function installTurbFilters() {
     var d = ensureDefs();
     if (d.querySelector("#wc-turb-outer")) return;
+    d.appendChild(buildTurbFilter("wc-lens-turb", 30, 0));
     d.appendChild(buildTurbFilter("wc-turb-outer", 26, 3));
     d.appendChild(buildTurbFilter("wc-turb-mid", 11, 1));
   }
@@ -532,6 +533,118 @@
     for (var i = 0; i < old.length; i++) d.removeChild(old[i]);
     d.appendChild(buildFilter("wc-refract", SIZE, REFRACT, mapURL, aberration));
     d.appendChild(buildFilter("wc-refract-sat", SAT_SIZE, SAT_REFRACT, mapURL, aberration));
+  }
+
+  /* ---- clone lens (WebKit) ----------------------------------------------
+     WebKit will not run an SVG filter in backdrop-filter — CSS.supports says
+     it will, the renderer disagrees — but it runs one happily as a plain
+     filter on an ordinary element. So where the backdrop route is closed, the
+     drop gets a copy of the page instead: a circular window holding a clone,
+     offset to line up with the real thing behind it, bent by the filter.
+
+     Only on touch, where the drop is parked and the copy only has to be
+     repositioned rather than chased around the screen.
+
+     Everything that must not exist twice is stripped from the copy: the
+     cursor itself, the grain, fixed chrome (which would anchor to this
+     container rather than the viewport, since a filter makes one), scripts,
+     and videos — those become their poster frame, since a second decoding
+     pipeline on a phone is not worth a circle of moving image. */
+  var cloneWrap = null;
+  var cloneInner = null;
+  var cloneBody = null;
+
+  function stripForClone(copy) {
+    var drop = copy.querySelectorAll(
+      "#water-cursor, #water-cursor-defs, #grain-overlay, .nav, .mini-footer, script, iframe, noscript, canvas"
+    );
+    var i;
+    for (i = 0; i < drop.length; i++) if (drop[i].parentNode) drop[i].parentNode.removeChild(drop[i]);
+
+    var vids = copy.querySelectorAll("video");
+    for (i = 0; i < vids.length; i++) {
+      var v = vids[i];
+      var still = document.createElement("div");
+      still.className = v.className;
+      var poster = v.getAttribute("poster");
+      still.style.cssText =
+        "background:" + (poster ? 'url("' + poster + '") center/cover no-repeat' : "#111");
+      if (v.parentNode) v.parentNode.replaceChild(still, v);
+    }
+
+    // No duplicate ids: other scripts on the page look elements up by id.
+    var ided = copy.querySelectorAll("[id]");
+    for (i = 0; i < ided.length; i++) ided[i].removeAttribute("id");
+    return copy;
+  }
+
+  function refreshClone() {
+    if (!cloneInner) return;
+    try {
+      while (cloneInner.firstChild) cloneInner.removeChild(cloneInner.firstChild);
+      // An opaque ground, so the circle reads as glass over the page rather
+      // than a hole cut through it.
+      var ground = document.createElement("div");
+      ground.style.cssText =
+        "position:absolute;inset:-300vh -100vw;background:" +
+        (getComputedStyle(document.body).backgroundColor || "#090809");
+      cloneInner.appendChild(ground);
+
+      var copy = stripForClone(document.body.cloneNode(true));
+      // Positioned, or the absolutely-placed ground above would paint over it.
+      copy.style.position = "relative";
+      copy.style.margin = "0";
+      cloneInner.appendChild(copy);
+      cloneBody = copy;
+    } catch (e) {
+      /* a broken copy is worse than none — drop back to the blurred rim */
+      if (cloneWrap && cloneWrap.parentNode) cloneWrap.parentNode.removeChild(cloneWrap);
+      cloneWrap = cloneInner = cloneBody = null;
+      root.classList.remove("has-clone-lens");
+    }
+  }
+
+  function buildCloneLens() {
+    cloneWrap = document.createElement("div");
+    cloneWrap.className = "wc-clone";
+    cloneInner = document.createElement("div");
+    cloneInner.className = "wc-clone__inner";
+    cloneWrap.appendChild(cloneInner);
+    root.insertBefore(cloneWrap, root.firstChild);
+    refreshClone();
+    if (!cloneInner) return;
+    root.classList.add("has-clone-lens");
+
+    // The page fills in after load (the CMS fetches content), so the copy has
+    // to be retaken — coalesced, since it is a whole-subtree clone.
+    if (window.MutationObserver) {
+      var pending = 0;
+      var mo = new MutationObserver(function (recs) {
+        // Ignore our own subtree, or rebuilding the copy would retrigger the
+        // observer and rebuild it again, for ever.
+        for (var i = 0; i < recs.length; i++) {
+          if (!root.contains(recs[i].target)) {
+            clearTimeout(pending);
+            pending = setTimeout(refreshClone, 400);
+            return;
+          }
+        }
+      });
+      mo.observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
+    addEventListener("scroll", positionClone, { passive: true });
+  }
+
+  function positionClone() {
+    if (!cloneWrap || !cloneInner) return;
+    var x = Math.round(drops[0].x - SIZE / 2);
+    var y = Math.round(drops[0].y - SIZE / 2);
+    // Opacity has to be set here: --wc-alpha is written onto each drop node,
+    // and the clone is their sibling, so it inherits nothing.
+    cloneWrap.style.opacity = fade.toFixed(3);
+    cloneWrap.style.transform = "translate3d(" + x + "px," + y + "px,0)";
+    cloneInner.style.transform =
+      "translate3d(" + -x + "px," + -(y + window.scrollY) + "px,0)";
   }
 
   /* ---- DOM --------------------------------------------------------------
@@ -625,6 +738,8 @@
     }
     if (ambient) {
       root.classList.add("is-ambient");
+      // Parked and unable to use the backdrop route: bend a copy instead.
+      if (!canRefract) buildCloneLens();
     } else {
       // Only hide the native cursor when there is actually one to replace.
       document.documentElement.classList.add("has-water-cursor");
@@ -855,6 +970,8 @@
         (-angle).toFixed(3) +
         "rad)";
     }
+
+    if (cloneWrap) positionClone();
 
     /* The pointer version only measures while it is actually travelling; the
        ambient one barely moves, so it watches continuously — its expensive
