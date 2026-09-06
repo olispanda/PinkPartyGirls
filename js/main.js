@@ -14,8 +14,17 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Note: this used to track the active slide's theme on document.body so
-  // CSS could swap the nav/footer colour per section. Both now use
-  // mix-blend-mode: difference instead (see .nav / .mini-footer in
-  // style.css), which reacts per-pixel without any JS bookkeeping.
+  // The nav/footer normally use mix-blend-mode: difference to stay legible
+  // over any slide. Over the hero video that reads as a muddy near-black, so
+  // there we want the nav to just be plain pink — toggle a body class while
+  // the home slide fills most of the viewport.
+  var hero = document.querySelector(".slide-home");
+  if (hero && "IntersectionObserver" in window) {
+    new IntersectionObserver(
+      function (entries) {
+        document.body.classList.toggle("over-hero", entries[0].isIntersecting);
+      },
+      { threshold: 0.5 }
+    ).observe(hero);
+  }
 });

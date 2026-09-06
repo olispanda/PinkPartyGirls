@@ -348,6 +348,13 @@ section {
   mix-blend-mode: difference;
 }
 
+/* Over the hero video the difference invert reads as a muddy near-black, so
+   there the nav is just plain pink (js/main.js toggles .over-hero while the
+   home slide fills the viewport). */
+body.over-hero .nav {
+  mix-blend-mode: normal;
+}
+
 .nav__inner {
   align-items: center;
 }
@@ -2023,12 +2030,22 @@ html.has-water-cursor select {
   left: 0;
   width: var(--wc-size, 172px);
   height: var(--wc-size, 172px);
-  border-radius: 50%;
-  overflow: hidden;
   pointer-events: none;
   opacity: 0; /* driven per frame from js/water-cursor.js */
-  filter: url(#wc-lens-turb) saturate(1.45) contrast(1.05) brightness(0.99);
+  /* Clips the bent output back to a clean circle: the displacement pushes
+     content past the edge, and without this the outline comes out ragged. */
+  clip-path: circle(50% at 50% 50%);
   will-change: transform;
+}
+
+/* Round, because the filter derives its lens map from this element's own
+   alpha — a disc blurred into a dome. See buildProceduralLens(). */
+.wc-clone__lens {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  overflow: hidden;
+  filter: url(#wc-lens-proc) saturate(1.45) contrast(1.05) brightness(0.99);
 }
 
 .wc-clone__inner {

@@ -80,6 +80,12 @@
      type — gets sampled away instead of bent. */
   var WAVE_RINGS = 4.5;
 
+  /* Shape of the WebKit-side lens (see buildProceduralLens). A tighter dome
+     leaves the middle flatter and steepens the rim, which is the profile the
+     painted map gives on the engines that can load one. */
+  var DOME_BLUR = 0.075; // blur radius as a share of the drop
+  var PROC_STRENGTH = 0.3; // displacement, likewise
+
   var SETTLE_MS = 4000; // ignore frame times until the page has settled
 
   var STIFF = 0.17; // main spring
@@ -506,6 +512,80 @@
     return f;
   }
 
+  /* A lens map with no feImage, for the engines that refuse it.
+
+     The trick is that the filter's own SourceAlpha is a disc — the clone
+     window is round — so blurring it gives a dome, a height field. The
+     gradient of that dome points radially and grows toward the rim, which is
+     exactly what a displacement map needs. Central differences via feOffset
+     get the gradient far cheaper than feConvolveMatrix would.
+
+     Sign matters: this way round the middle spreads and the rim compresses,
+     which is a magnifying bead. Flipped, it pinches instead. */
+  function buildProceduralLens(id, size, strength) {
+    var f = el("filter", {
+      id: id,
+      x: "-25%",
+      y: "-25%",
+      width: "150%",
+      height: "150%",
+      "color-interpolation-filters": "sRGB"
+    });
+    var step = Math.max(2, Math.round(size * 0.018));
+    // alpha → luminance, so the blur and the differences have something to
+    // work on in the colour channels
+    f.appendChild(
+      el("feColorMatrix", {
+        in: "SourceAlpha",
+        type: "matrix",
+        values: "0 0 0 1 0  0 0 0 1 0  0 0 0 1 0  0 0 0 0 1",
+        result: "a"
+      })
+    );
+    f.appendChild(
+      el("feGaussianBlur", { in: "a", stdDeviation: (size * DOME_BLUR).toFixed(1), result: "dome" })
+    );
+    f.appendChild(el("feOffset", { in: "dome", dx: -step, dy: 0, result: "l" }));
+    f.appendChild(el("feOffset", { in: "dome", dx: step, dy: 0, result: "r" }));
+    f.appendChild(
+      el("feComposite", {
+        in: "l", in2: "r", operator: "arithmetic",
+        k2: 0.7, k3: -0.7, k4: 0.5, result: "gx"
+      })
+    );
+    f.appendChild(el("feOffset", { in: "dome", dx: 0, dy: -step, result: "u" }));
+    f.appendChild(el("feOffset", { in: "dome", dx: 0, dy: step, result: "d" }));
+    f.appendChild(
+      el("feComposite", {
+        in: "u", in2: "d", operator: "arithmetic",
+        k2: 0.7, k3: -0.7, k4: 0.5, result: "gy"
+      })
+    );
+    // pack the two gradients into red and green, the channels the map reads
+    f.appendChild(
+      el("feColorMatrix", {
+        in: "gx", type: "matrix",
+        values: "1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0 1", result: "mr"
+      })
+    );
+    f.appendChild(
+      el("feColorMatrix", {
+        in: "gy", type: "matrix",
+        values: "0 0 0 0 0  1 0 0 0 0  0 0 0 0 0  0 0 0 0 1", result: "mg"
+      })
+    );
+    f.appendChild(
+      el("feComposite", { in: "mr", in2: "mg", operator: "arithmetic", k2: 1, k3: 1, result: "map" })
+    );
+    f.appendChild(
+      el("feDisplacementMap", {
+        in: "SourceGraphic", in2: "map", scale: strength,
+        xChannelSelector: "R", yChannelSelector: "G"
+      })
+    );
+    return f;
+  }
+
   function ensureDefs() {
     if (!defs) {
       var svg = el("svg", { "aria-hidden": "true", focusable: "false" });
@@ -522,7 +602,7 @@
   function installTurbFilters() {
     var d = ensureDefs();
     if (d.querySelector("#wc-turb-outer")) return;
-    d.appendChild(buildTurbFilter("wc-lens-turb", 30, 0));
+    d.appendChild(buildProceduralLens("wc-lens-proc", SIZE, Math.round(SIZE * PROC_STRENGTH)));
     d.appendChild(buildTurbFilter("wc-turb-outer", 26, 3));
     d.appendChild(buildTurbFilter("wc-turb-mid", 11, 1));
   }
@@ -607,9 +687,16 @@
   function buildCloneLens() {
     cloneWrap = document.createElement("div");
     cloneWrap.className = "wc-clone";
+    // Three layers on purpose: the outer one clips the bent output back to a
+    // clean circle, the middle one is round so the filter's own SourceAlpha
+    // is the disc its lens map is derived from, and the inner one carries the
+    // copy and its offset.
+    var lensLayer = document.createElement("div");
+    lensLayer.className = "wc-clone__lens";
     cloneInner = document.createElement("div");
     cloneInner.className = "wc-clone__inner";
-    cloneWrap.appendChild(cloneInner);
+    lensLayer.appendChild(cloneInner);
+    cloneWrap.appendChild(lensLayer);
     root.insertBefore(cloneWrap, root.firstChild);
     refreshClone();
     if (!cloneInner) return;
