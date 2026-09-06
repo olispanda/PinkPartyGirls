@@ -1603,7 +1603,7 @@ html.js-anim .reveal.is-in {
 .pink-picker input[type="range"]::-webkit-slider-runnable-track {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(to right, hsl(310, 71%, 51%), hsl(344, 71%, 51%));
+  background: linear-gradient(to right, hsl(300, 71%, 51%), hsl(355, 71%, 51%));
 }
 
 .pink-picker input[type="range"]::-webkit-slider-thumb {
@@ -1622,7 +1622,7 @@ html.js-anim .reveal.is-in {
 .pink-picker input[type="range"]::-moz-range-track {
   height: 6px;
   border-radius: 999px;
-  background: linear-gradient(to right, hsl(310, 71%, 51%), hsl(344, 71%, 51%));
+  background: linear-gradient(to right, hsl(300, 71%, 51%), hsl(355, 71%, 51%));
 }
 
 .pink-picker input[type="range"]::-moz-range-thumb {
@@ -2068,3 +2068,34 @@ html.has-water-cursor select {
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
 }
+
+/* ==========================================================================
+   Hero — WebGL scene (js/hero-gl.js)
+   The canvas draws the video, the wash, the wordmark and the bubble as one
+   scene, so the bubble looks identical in every browser rather than being
+   whatever that engine happens to do with backdrop-filter.
+
+   The DOM stays put and merely goes invisible: it is the fallback when
+   WebGL is missing, it carries the wordmark's alt text, and its geometry is
+   what tells the shader where to draw the wordmark. Hence visibility rather
+   than display — a removed element has no box to measure.
+   ========================================================================== */
+.slide-home__gl {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.slide-home.is-gl .slide-home__video,
+.slide-home.is-gl .slide-home__overlay,
+.slide-home.is-gl .slide-home__logo {
+  visibility: hidden;
+}
+
+/* One bubble, not two — handled in the scripts: hero-gl.js sets
+   .has-hero-gl on <html> once it has painted, and water-cursor.js removes
+   itself when it sees it. A CSS rule can't do this properly, since the
+   cursor also has to stop running, not just stop showing. */

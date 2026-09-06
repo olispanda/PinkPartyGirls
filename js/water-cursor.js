@@ -101,6 +101,22 @@
 
   if (reduceMotion) return;
 
+  /* The hero's WebGL scene (js/hero-gl.js) draws its own bubble, and does it
+     the same way in every engine. Where that runs, this one stands down
+     rather than putting a second bubble on the same page. The class lands
+     after its first painted frame, so watch for it as well as checking now. */
+  if (document.documentElement.classList.contains("has-hero-gl")) return;
+  var heroGL = document.querySelector(".slide-home");
+  if (heroGL && window.MutationObserver) {
+    new MutationObserver(function (recs, obs) {
+      if (document.documentElement.classList.contains("has-hero-gl")) {
+        obs.disconnect();
+        if (root && root.parentNode) root.parentNode.removeChild(root);
+        document.documentElement.classList.remove("has-water-cursor");
+      }
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+  }
+
   /* Touch has no pointer to replace, so the drop stops being a cursor and
      becomes a fixture: parked in the middle of the screen, drifting a little,
      with the page scrolling through it. Bigger than the cursor version, since
