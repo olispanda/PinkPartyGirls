@@ -50,9 +50,9 @@
 
     /* Bubble shape. Numbers mean the same as their CSS counterparts in
        js/water-cursor.js, so the two stay recognisably the same object. */
-    "const float BEND = 0.42;",
-    "const float RIM_BITE = 3.2;",
-    "const float CHROMA = 0.055;",
+    "const float IOR = 0.66;",    // air → water-ish; lower bends harder
+    "const float THICK = 1.75;",  // how far the bent ray travels, in radii
+    "const float DISP = 0.055;",  // spread between the three colour rays
 
     "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,4.1414)))*43758.5453);}",
     "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);",
@@ -119,26 +119,36 @@
     /* the sphere: analytic normal of a hemisphere, same as the reference */
     "  vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
     "  float fres=pow(1.0-n.z,2.5);",
-    /* Nearly flat through the middle, turning hard at the rim — a bead,
-       not a magnifying glass. */
-    "  float prof=BEND*(0.12*r+0.88*pow(r,RIM_BITE));",
-    "  vec2 bend=normalize(d+vec2(0.0001))*prof*uRadius;",
-    "  vec2 sp=frag-bend;",
-    /* a little surface unrest so it doesn't read as machined glass */
+    /* Real refraction rather than a hand-shaped falloff. The eye ray meets
+       the sphere, Snell bends it, and the bent ray is followed to where it
+       leaves — which magnifies evenly through the middle and swings hard at
+       the rim, the way glass actually behaves. The previous profile was
+       deliberately flat in the centre and barely enlarged anything, which is
+       what made it look weak next to the reference.
+
+       Dispersion is done properly too: three rays at slightly different
+       indices, since that is where a real fringe comes from. */
+    "  vec3 eye=vec3(0.0,0.0,-1.0);",
     "  float w=noise(dw*2.3+uTime*0.06)-0.5;",
-    "  sp+=normalize(d+vec2(0.0001))*w*uRadius*0.035;",
-    /* three samples, split along the bend: the colour fringe */
-    "  vec2 ca=normalize(d+vec2(0.0001))*uRadius*CHROMA*r;",
-    "  vec4 sR=scene(sp+ca),sG=scene(sp),sB=scene(sp-ca);",
+    "  float th=THICK*uRadius*(1.0+w*0.05);",
+    "  vec2 sp=frag+refract(eye,n,IOR).xy*th;",
+    "  vec2 spR=frag+refract(eye,n,IOR*(1.0-DISP)).xy*th;",
+    "  vec2 spB=frag+refract(eye,n,IOR*(1.0+DISP)).xy*th;",
+    "  vec4 sR=scene(spR),sG=scene(sp),sB=scene(spB);",
     "  vec4 bent=vec4(sR.r,sG.g,sB.b,max(sG.a,max(sR.a,sB.a)));",
     "  col=bent.rgb;a=bent.a;",
     /* soap film: thin at the rim, so that is where the colour sits */
-    "  float film=smoothstep(0.25,0.98,r)*(0.55+0.45*noise(dw*1.7-uTime*0.05));",
+    "  float film=smoothstep(0.45,1.0,r)*(0.55+0.45*noise(dw*1.7-uTime*0.05));",
     "  vec3 tint=mix(uAccent,vec3(0.62,0.86,1.0),0.5+0.5*sin(r*7.0+uTime*0.35));",
-    "  col=mix(col,col*0.75+tint*0.55,film*0.34);",
+    "  col=mix(col,col*0.82+tint*0.45,film*0.20);",
     /* rim shoulder, wide and soft — a hard ring is the giveaway */
-    "  float shoulder=fres*smoothstep(0.55,1.0,r);",
-    "  col+=vec3(0.14)*shoulder;a=max(a,shoulder*0.5);",
+    /* The rim reads dark on the reference — glass seen edge-on reflects
+       away rather than lighting up — with only a thin bright line right at
+       the outline. */
+    "  float shoulder=fres*smoothstep(0.62,1.0,r);",
+    "  col*=1.0-0.35*shoulder;",
+    "  float outline=smoothstep(0.90,1.0,r)*(1.0-smoothstep(0.985,1.0,r));",
+    "  col+=vec3(0.30)*outline;a=max(a,max(shoulder*0.45,outline));",
     /* Speculars stay white — they are the light, not the surface. A real
        highlight is a small bright core inside a much wider, much fainter
        halo; one opaque blob is what reads as cartoon glass. */
@@ -148,7 +158,7 @@
     "  float second=smoothstep(0.07,0.0,distance(dw,vec2(0.42,-0.26)));",
     /* the caustic is a flattened arc against the far wall, not a disc */
     "  float caustic=smoothstep(0.20,0.0,distance(dw*vec2(1.0,2.7),vec2(0.05,0.70)*vec2(1.0,2.7)));",
-    "  float lit=0.62*core+0.10*halo+0.22*second+0.20*caustic;",
+    "  float lit=0.55*core+0.035*halo+0.16*second+0.13*caustic;",
     "  col+=vec3(lit);a=max(a,lit);",
     /* smoothstep needs its edges in ascending order — reversed, the result
        is undefined by the spec, and the engines duly disagree: Chromium and
@@ -344,7 +354,9 @@
     // Anything inside the block that paints its own box — the chip's marker
     // highlight, for one — has to come along, or the text arrives naked.
     function paintBoxes(cx, el, sy) {
-      var kids = el.querySelectorAll("*");
+      // Include the element itself: an outlined button *is* the element, and
+      // looking only at its children loses the outline.
+      var kids = [el].concat(Array.prototype.slice.call(el.querySelectorAll("*")));
       for (var i = 0; i < kids.length; i++) {
         var k = kids[i];
         var ks = getComputedStyle(k);
