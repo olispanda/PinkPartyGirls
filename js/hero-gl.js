@@ -147,23 +147,23 @@
     "  vec4 bent=vec4(sR.r,sG.g,sB.b,max(sG.a,max(sR.a,sB.a)));",
     "  col=bent.rgb;a=bent.a;",
     /* soap film: thin at the rim, so that is where the colour sits */
-    "  float film=smoothstep(0.30,1.0,r)*(0.45+0.55*noise(dw*2.1-uTime*0.05));",
-    "  vec3 tint=mix(uAccent,vec3(0.62,0.86,1.0),0.5+0.5*sin(r*7.0+uTime*0.35));",
-    "  col=mix(col,col*0.80+tint*0.50,film*0.30);",
+    "  float film=smoothstep(0.12,0.95,r)*(0.40+0.60*noise(dw*2.1-uTime*0.05));",
+    "  vec3 tint=mix(uAccent,vec3(0.55,0.72,1.0),0.5+0.5*sin(r*5.5+uTime*0.35+noise(dw*1.4)*2.0));",
+    "  col=mix(col,col*0.72+tint*0.62,film*0.42);",
     /* Over the sections the scene behind is transparent, so without this the
        wall contributes no opacity at all and the bubble thins out to a bare
        outline. */
-    "  a=max(a,film*0.26);",
+    "  a=max(a,film*0.34);",
     /* rim shoulder, wide and soft — a hard ring is the giveaway */
-    /* The rim reads dark on the reference — glass seen edge-on reflects
-       away rather than lighting up — with only a thin bright line right at
-       the outline. */
-    "  float shoulder=fres*smoothstep(0.58,0.96,r);",
-    "  col*=1.0-0.42*shoulder;",
-    /* Thin and late: a wide soft ring is the other half of the cartoon look.
-       This is close to a line, which is what the wall of a bubble is. */
-    "  float outline=smoothstep(0.955,0.988,r)*(1.0-smoothstep(0.992,1.0,r));",
-    "  col+=vec3(0.42)*outline;a=max(a,max(shoulder*0.5,outline));",
+    /* No drawn edge at all. A stroke at the silhouette — however thin — is
+       read as an outline, and darkening the shoulder to compensate is what
+       turned the whole thing grey. What a bubble actually has is Fresnel:
+       the wall returns more light the more edge-on it is seen, so it
+       brightens toward the rim and fades out with nothing drawn at the
+       boundary itself. */
+    "  float rim=fres*smoothstep(0.30,0.99,r)*(1.0-smoothstep(0.94,1.0,r));",
+    "  col+=uAccent*rim*0.30+vec3(0.16)*rim;",
+    "  a=max(a,rim*0.75);",
     /* Two round dots and a blob below them read as a face — which is exactly
        what made this look drawn. A soap film is a mirror: what you actually
        see on one is the room smeared into arcs that follow the curvature,
