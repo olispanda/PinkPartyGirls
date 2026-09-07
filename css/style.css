@@ -826,7 +826,10 @@ html.snap-page {
 }
 
 .mini-footer__social {
-  grid-column: 9 / 12;
+  /* Same span as the nav links above it: since the grid narrowed to the
+     content column, three tracks were no longer enough for four labels and
+     YouTube wrapped onto its own line. justify-self keeps it flush right. */
+  grid-column: 7 / 12;
   display: flex;
   gap: 1.5rem;
   font-family: var(--font-ui);
@@ -1273,7 +1276,7 @@ html:not(.snap-page) main {
 }
 
 .footer__social {
-  grid-column: 9 / 12;
+  grid-column: 7 / 12; /* see .mini-footer__social — four labels need the room */
   justify-self: end;
   display: flex;
   gap: 1.5rem;
@@ -2141,3 +2144,11 @@ html.has-water-cursor select {
    .has-hero-gl on <html> once it has painted, and water-cursor.js removes
    itself when it sees it. A CSS rule can't do this properly, since the
    cursor also has to stop running, not just stop showing. */
+
+/* Text the WebGL scene has taken over (js/hero-gl.js draws it into a texture
+   so the bubble can refract it). Kept in the DOM and merely invisible: it is
+   the accessible copy, it is what a crawler reads, and its line boxes are
+   what the drawing is measured from. */
+.is-gl-text {
+  visibility: hidden;
+}

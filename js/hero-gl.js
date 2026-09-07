@@ -31,10 +31,14 @@
     "varying vec2 vUv;",
     "uniform sampler2D uVideo;",
     "uniform sampler2D uLogo;",
+    "uniform sampler2D uPage;",
     "uniform vec2 uRes;",
     "uniform vec2 uVideoRes;",
     "uniform vec4 uLogoRect;",
     "uniform vec4 uHeroRect;",
+    "uniform vec2 uPageSize;",
+    "uniform float uScroll;",
+    "uniform float uHasPage;",
     "uniform vec2 uBubble;",
     "uniform float uRadius;",
     "uniform float uAlpha;",
@@ -67,9 +71,18 @@
        the bubble can travel down through the other sections. Outside the
        hero rectangle this returns nothing at all — alpha zero — and the
        page below shows through untouched. */
+    /* Text drawn from the page, in document space — the bubble bends this
+       the same way it bends the hero. */
+    "vec4 pageText(vec2 frag){",
+    " if(uHasPage<0.5) return vec4(0.0);",
+    " vec2 uv=vec2(frag.x/uPageSize.x,(frag.y+uScroll)/uPageSize.y);",
+    " if(uv.x<0.0||uv.x>1.0||uv.y<0.0||uv.y>1.0) return vec4(0.0);",
+    " return texture2D(uPage,uv);}",
+
     "vec4 scene(vec2 frag){",
+    " vec4 txt=pageText(frag);",
     " vec2 h=frag-uHeroRect.xy;",
-    " if(h.x<0.0||h.y<0.0||h.x>uHeroRect.z||h.y>uHeroRect.w) return vec4(0.0);",
+    " if(h.x<0.0||h.y<0.0||h.x>uHeroRect.z||h.y>uHeroRect.w) return txt;",
     " vec3 col=vec3(0.035,0.031,0.035);",
     " if(uHasVideo>0.5){",
     "  vec2 vuv=coverUV(h,uHeroRect.zw,uVideoRes);",
@@ -84,6 +97,7 @@
     " if(luv.x>=0.0&&luv.x<=1.0&&luv.y>=0.0&&luv.y<=1.0){",
     "  float a=texture2D(uLogo,luv).a;",
     "  col=mix(col,uAccent,a);}",
+    " col=mix(col,txt.rgb,txt.a);",
     " return vec4(col,1.0);}",
 
     "void main(){",
@@ -205,7 +219,7 @@
 
     var U = {};
     [
-      "uVideo", "uLogo", "uRes", "uVideoRes", "uLogoRect", "uHeroRect", "uBubble",
+      "uVideo", "uLogo", "uRes", "uVideoRes", "uLogoRect", "uHeroRect", "uPage", "uPageSize", "uScroll", "uHasPage", "uBubble",
       "uRadius", "uAlpha", "uTime", "uAccent", "uHasVideo", "uSquash", "uSquashDir"
     ].forEach(function (n) {
       U[n] = gl.getUniformLocation(prog, n);
@@ -265,6 +279,165 @@
       if (!painted && canvas.parentNode) canvas.parentNode.removeChild(canvas);
     }, 4000);
 
+    /* ---- page text as a texture ------------------------------------------
+       The shader can only bend what it has as pixels. The hero was easy —
+       video and a flat SVG are already images — but the sections below are
+       HTML, and that is the whole reason the bubble stopped refracting once
+       it left the hero.
+
+       The reference site sidesteps this by not having HTML text at all: its
+       copy lives in a JSON blob, complete with its own line-break markers,
+       and is drawn into a canvas with fillText. Same idea here, with one
+       improvement: rather than re-implementing line breaking, the browser's
+       own line boxes are read back per character, so the drawn text lands
+       exactly where the HTML would have, with the same breaks.
+
+       The elements stay in the DOM and only lose visibility. They remain the
+       accessible copy, they remain what a crawler reads, and they are what
+       these measurements come from. */
+    var TEXT_SEL = [
+      ".slide-statement__heading",
+      ".slide-events__heading",
+      ".slide-events__list",
+      ".btn-dark-outline"
+    ].join(",");
+    var pageTex = makeTex(2);
+    gl.uniform1i(U.uPage, 2);
+    var pageH = 1, pageReady = false;
+
+    // Split an element into rendered lines: walk its characters, and start a
+    // new line whenever the browser puts one on a different row.
+    function linesOf(el) {
+      var walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null);
+      var range = document.createRange();
+      var lines = [];
+      var node, cur = null, curOwner = null;
+      while ((node = walker.nextNode())) {
+        var text = node.nodeValue;
+        // Colour and case follow the text's own parent, not the block: the
+        // "pink" chip sits inside the heading with its own styling.
+        var owner = node.parentElement || el;
+        if (owner !== curOwner) {
+          curOwner = owner;
+          cur = null; // never merge two elements' text into one run
+        }
+        for (var i = 0; i < text.length; i++) {
+          range.setStart(node, i);
+          range.setEnd(node, i + 1);
+          var r = range.getBoundingClientRect();
+          if (!r.width && !r.height) {
+            if (cur) cur.text += text[i]; // spaces at a wrap have no box
+            continue;
+          }
+          if (!cur || Math.abs(r.top - cur.top) > 2) {
+            cur = { top: r.top, bottom: r.bottom, left: r.left, text: text[i], owner: owner };
+            lines.push(cur);
+          } else {
+            cur.text += text[i];
+            if (r.bottom > cur.bottom) cur.bottom = r.bottom;
+          }
+        }
+      }
+      return lines;
+    }
+
+    // Anything inside the block that paints its own box — the chip's marker
+    // highlight, for one — has to come along, or the text arrives naked.
+    function paintBoxes(cx, el, sy) {
+      var kids = el.querySelectorAll("*");
+      for (var i = 0; i < kids.length; i++) {
+        var k = kids[i];
+        var ks = getComputedStyle(k);
+        var bg = ks.backgroundColor;
+        if (!bg || bg === "transparent" || bg === "rgba(0, 0, 0, 0)") continue;
+        var b = k.getBoundingClientRect();
+        if (!b.width || !b.height) continue;
+        var rad = parseFloat(ks.borderRadius) || 0;
+        cx.fillStyle = bg;
+        if (rad > 0 && cx.roundRect) {
+          cx.beginPath();
+          cx.roundRect(b.left, b.top + sy, b.width, b.height, rad);
+          cx.fill();
+        } else {
+          cx.fillRect(b.left, b.top + sy, b.width, b.height);
+        }
+      }
+      // Outlines separately: the buttons here are borders with no fill, and
+      // without this they arrive as labels floating in mid-air.
+      for (i = 0; i < kids.length; i++) {
+        var e2 = kids[i];
+        var s2 = getComputedStyle(e2);
+        var bw = parseFloat(s2.borderTopWidth) || 0;
+        if (!bw || s2.borderTopStyle === "none") continue;
+        var bb = e2.getBoundingClientRect();
+        if (!bb.width || !bb.height) continue;
+        var br = parseFloat(s2.borderRadius) || 0;
+        cx.strokeStyle = s2.borderTopColor;
+        cx.lineWidth = bw;
+        if (br > 0 && cx.roundRect) {
+          cx.beginPath();
+          cx.roundRect(bb.left + bw / 2, bb.top + sy + bw / 2, bb.width - bw, bb.height - bw, br);
+          cx.stroke();
+        } else {
+          cx.strokeRect(bb.left + bw / 2, bb.top + sy + bw / 2, bb.width - bw, bb.height - bw);
+        }
+      }
+    }
+
+    function buildTextLayer() {
+      var els = document.querySelectorAll(TEXT_SEL);
+      if (!els.length) return;
+      var docH = Math.max(
+        document.documentElement.scrollHeight,
+        document.body ? document.body.scrollHeight : 0
+      );
+      // Cap the texture: tall pages would otherwise blow past the limit, and
+      // this only has to cover what the bubble can reach.
+      var scale = Math.min(DPR, 1.5);
+      var texW = Math.min(4096, Math.round(W * scale));
+      var texH = Math.min(8192, Math.round(docH * scale));
+      var c = document.createElement("canvas");
+      c.width = texW;
+      c.height = texH;
+      var cx = c.getContext("2d");
+      if (!cx) return;
+      cx.scale(texW / W, texH / docH);
+      cx.textBaseline = "alphabetic";
+
+      var sy = window.scrollY || window.pageYOffset || 0;
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        var cs = getComputedStyle(el);
+        // Measured while visible; hidden elements still have boxes, so this
+        // keeps working on every rebuild.
+        var lines = linesOf(el);
+        paintBoxes(cx, el.parentNode === document.body ? el : el, sy);
+        for (var j = 0; j < lines.length; j++) {
+          var ln = lines[j];
+          var os = getComputedStyle(ln.owner);
+          cx.fillStyle = os.color;
+          cx.font = os.fontStyle + " " + os.fontWeight + " " + os.fontSize + " " + os.fontFamily;
+          var tt = os.textTransform;
+          var t = ln.text;
+          if (tt === "uppercase") t = t.toUpperCase();
+          else if (tt === "lowercase") t = t.toLowerCase();
+          // Baseline from the line box: its bottom minus the descender, which
+          // is close enough that the drawn line sits on the HTML one.
+          var fsize = parseFloat(os.fontSize) || 16;
+          var base = ln.bottom - (ln.bottom - ln.top - fsize) / 2 - fsize * 0.21;
+          cx.fillText(t, ln.left, base + sy);
+        }
+        el.classList.add("is-gl-text");
+      }
+
+      gl.activeTexture(gl.TEXTURE2);
+      gl.bindTexture(gl.TEXTURE_2D, pageTex);
+      gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, c);
+      pageH = docH;
+      pageReady = true;
+    }
+
     /* ---- state ---- */
     var W = 0, H = 0, DPR = 1;
     function resize() {
@@ -279,7 +452,18 @@
       loadLogo(); // redraw at the new size, so it stays sharp
     }
     resize();
-    window.addEventListener("resize", resize, { passive: true });
+    window.addEventListener("resize", function () {
+      resize();
+      buildTextLayer();
+    }, { passive: true });
+    // Fonts change the line boxes, so wait for them before measuring.
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(function () { buildTextLayer(); });
+    } else {
+      setTimeout(buildTextLayer, 400);
+    }
+    // The CMS fills content in late; remeasure once it settles.
+    setTimeout(buildTextLayer, 1500);
 
     var finePointer = window.matchMedia && window.matchMedia("(pointer: fine)").matches;
     var SIZE = finePointer ? 136 : 172;
@@ -357,6 +541,9 @@
       gl.uniform2f(U.uRes, W * DPR, H * DPR);
       gl.uniform4f(U.uHeroRect, hr.left * DPR, hr.top * DPR, hr.width * DPR, hr.height * DPR);
       gl.uniform4f(U.uLogoRect, lr.left * DPR, lr.top * DPR, lr.width * DPR, lr.height * DPR);
+      gl.uniform2f(U.uPageSize, W * DPR, pageH * DPR);
+      gl.uniform1f(U.uScroll, (window.scrollY || window.pageYOffset || 0) * DPR);
+      gl.uniform1f(U.uHasPage, pageReady ? 1 : 0);
       gl.uniform2f(U.uBubble, pos.x * DPR, pos.y * DPR);
       gl.uniform1f(U.uRadius, (SIZE / 2) * DPR);
       gl.uniform1f(U.uAlpha, alpha);
