@@ -386,16 +386,23 @@
         var ks = getComputedStyle(k);
         var bg = ks.backgroundColor;
         if (!bg || bg === "transparent" || bg === "rgba(0, 0, 0, 0)") continue;
-        var b = k.getBoundingClientRect();
-        if (!b.width || !b.height) continue;
         var rad = parseFloat(ks.borderRadius) || 0;
         cx.fillStyle = bg;
-        if (rad > 0 && cx.roundRect) {
-          cx.beginPath();
-          cx.roundRect(b.left, b.top + sy, b.width, b.height, rad);
-          cx.fill();
-        } else {
-          cx.fillRect(b.left, b.top + sy, b.width, b.height);
+        /* Per line fragment, not one enclosing rectangle. An inline element
+           that wraps has a box per line, and the union of them is a slab
+           that covers the gap between — which is what drew the oversized
+           panel and the stray block after it. */
+        var rects = k.getClientRects();
+        for (var q = 0; q < rects.length; q++) {
+          var b = rects[q];
+          if (!b.width || !b.height) continue;
+          if (rad > 0 && cx.roundRect) {
+            cx.beginPath();
+            cx.roundRect(b.left, b.top + sy, b.width, b.height, Math.min(rad, b.height / 2));
+            cx.fill();
+          } else {
+            cx.fillRect(b.left, b.top + sy, b.width, b.height);
+          }
         }
       }
       // Outlines separately: the buttons here are borders with no fill, and
@@ -405,24 +412,46 @@
         var s2 = getComputedStyle(e2);
         var bw = parseFloat(s2.borderTopWidth) || 0;
         if (!bw || s2.borderTopStyle === "none") continue;
-        var bb = e2.getBoundingClientRect();
-        if (!bb.width || !bb.height) continue;
         var br = parseFloat(s2.borderRadius) || 0;
         cx.strokeStyle = s2.borderTopColor;
         cx.lineWidth = bw;
-        if (br > 0 && cx.roundRect) {
-          cx.beginPath();
-          cx.roundRect(bb.left + bw / 2, bb.top + sy + bw / 2, bb.width - bw, bb.height - bw, br);
-          cx.stroke();
-        } else {
-          cx.strokeRect(bb.left + bw / 2, bb.top + sy + bw / 2, bb.width - bw, bb.height - bw);
+        var brects = e2.getClientRects();
+        for (var z = 0; z < brects.length; z++) {
+          var bb = brects[z];
+          if (!bb.width || !bb.height) continue;
+          if (br > 0 && cx.roundRect) {
+            cx.beginPath();
+            cx.roundRect(bb.left + bw / 2, bb.top + sy + bw / 2, bb.width - bw, bb.height - bw,
+              Math.min(br, (bb.height - bw) / 2));
+            cx.stroke();
+          } else {
+            cx.strokeRect(bb.left + bw / 2, bb.top + sy + bw / 2, bb.width - bw, bb.height - bw);
+          }
         }
       }
     }
 
+    var textRetry = 0;
+
     function buildTextLayer() {
       var els = document.querySelectorAll(TEXT_SEL);
       if (!els.length) return;
+      /* Never measure mid-animation. These blocks fade and slide in on
+         scroll, and a box measured halfway through lands at a position the
+         element has already left — which is how a chip ends up drawn as an
+         oversized panel sitting beside its own text. Wait it out and retry. */
+      if (document.getAnimations) {
+        for (var q = 0; q < els.length; q++) {
+          var running = els[q].getAnimations
+            ? els[q].getAnimations({ subtree: true })
+            : [];
+          if (running.length) {
+            clearTimeout(textRetry);
+            textRetry = setTimeout(buildTextLayer, 240);
+            return;
+          }
+        }
+      }
       /* Un-mark first: the class makes these transparent, and on a rebuild we
          would otherwise measure that transparency and draw nothing. Restored
          at the end of the same task, so nothing is ever painted uncovered. */
@@ -508,6 +537,18 @@
     }
     // The CMS fills content in late; remeasure once it settles.
     setTimeout(buildTextLayer, 1500);
+    // Blocks reveal as they scroll into view, each with its own animation —
+    // remeasure whenever one lands.
+    document.addEventListener(
+      "animationend",
+      function (e) {
+        if (e.target && e.target.closest && e.target.closest(TEXT_SEL)) {
+          clearTimeout(textRetry);
+          textRetry = setTimeout(buildTextLayer, 60);
+        }
+      },
+      true
+    );
 
     var finePointer = window.matchMedia && window.matchMedia("(pointer: fine)").matches;
     var SIZE = finePointer ? 136 : 172;
