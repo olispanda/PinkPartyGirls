@@ -49,9 +49,10 @@
     "uniform vec2 uSquashDir;",
 
     /* Bubble shape. Numbers mean the same as their CSS counterparts in
-       js/water-cursor.js, so the two stay recognisably the same object. */
+       the CSS version this replaced, so the shape stayed recognisable. */
     "const float IOR = 0.66;",    // air → water-ish; lower bends harder
-    "const float THICK = 1.75;",  // how far the bent ray travels, in radii
+    "const float THICK = 1.15;",  // past ~1.5 the content gets pushed out of
+                                 // the middle and the bubble reads as empty  // how far the bent ray travels, in radii
     "const float DISP = 0.055;",  // spread between the three colour rays
 
     "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,4.1414)))*43758.5453);}",
@@ -131,9 +132,17 @@
     "  vec3 eye=vec3(0.0,0.0,-1.0);",
     "  float w=noise(dw*2.3+uTime*0.06)-0.5;",
     "  float th=THICK*uRadius*(1.0+w*0.05);",
-    "  vec2 sp=frag+refract(eye,n,IOR).xy*th;",
-    "  vec2 spR=frag+refract(eye,n,IOR*(1.0-DISP)).xy*th;",
-    "  vec2 spB=frag+refract(eye,n,IOR*(1.0+DISP)).xy*th;",
+    /* The normal lives in the squashed frame, whose axes rotate with the
+       direction of travel, so the bent ray comes out in that frame too. It
+       has to be rotated back before it can be added to a world-space
+       position — otherwise the whole displacement swings round as you move,
+       which is the spinning that was left after fixing the highlights. */
+    "  vec2 bR=refract(eye,n,IOR*(1.0-DISP)).xy;",
+    "  vec2 bG=refract(eye,n,IOR).xy;",
+    "  vec2 bB=refract(eye,n,IOR*(1.0+DISP)).xy;",
+    "  vec2 sp=frag+(ax*bG.x+ay*bG.y)*th;",
+    "  vec2 spR=frag+(ax*bR.x+ay*bR.y)*th;",
+    "  vec2 spB=frag+(ax*bB.x+ay*bB.y)*th;",
     "  vec4 sR=scene(spR),sG=scene(sp),sB=scene(spB);",
     "  vec4 bent=vec4(sR.r,sG.g,sB.b,max(sG.a,max(sR.a,sB.a)));",
     "  col=bent.rgb;a=bent.a;",
@@ -579,9 +588,6 @@
       if (!painted) {
         painted = true;
         hero.classList.add("is-gl");
-        /* One bubble per page. The CSS cursor is the fallback for pages
-           without a GL hero; where the scene runs, it draws the bubble and
-           the cursor version would only double it. */
         document.documentElement.classList.add("has-hero-gl");
       }
     }
