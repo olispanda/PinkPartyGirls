@@ -147,27 +147,42 @@
     "  vec4 bent=vec4(sR.r,sG.g,sB.b,max(sG.a,max(sR.a,sB.a)));",
     "  col=bent.rgb;a=bent.a;",
     /* soap film: thin at the rim, so that is where the colour sits */
-    "  float film=smoothstep(0.45,1.0,r)*(0.55+0.45*noise(dw*1.7-uTime*0.05));",
+    "  float film=smoothstep(0.30,1.0,r)*(0.45+0.55*noise(dw*2.1-uTime*0.05));",
     "  vec3 tint=mix(uAccent,vec3(0.62,0.86,1.0),0.5+0.5*sin(r*7.0+uTime*0.35));",
-    "  col=mix(col,col*0.82+tint*0.45,film*0.20);",
+    "  col=mix(col,col*0.80+tint*0.50,film*0.30);",
+    /* Over the sections the scene behind is transparent, so without this the
+       wall contributes no opacity at all and the bubble thins out to a bare
+       outline. */
+    "  a=max(a,film*0.26);",
     /* rim shoulder, wide and soft — a hard ring is the giveaway */
     /* The rim reads dark on the reference — glass seen edge-on reflects
        away rather than lighting up — with only a thin bright line right at
        the outline. */
-    "  float shoulder=fres*smoothstep(0.62,1.0,r);",
-    "  col*=1.0-0.35*shoulder;",
-    "  float outline=smoothstep(0.90,1.0,r)*(1.0-smoothstep(0.985,1.0,r));",
-    "  col+=vec3(0.30)*outline;a=max(a,max(shoulder*0.45,outline));",
-    /* Speculars stay white — they are the light, not the surface. A real
-       highlight is a small bright core inside a much wider, much fainter
-       halo; one opaque blob is what reads as cartoon glass. */
-    "  vec2 sc=vec2(-0.36,-0.42);",
-    "  float core=smoothstep(0.09,0.0,distance(dw,sc));",
-    "  float halo=smoothstep(0.46,0.02,distance(dw,sc));",
-    "  float second=smoothstep(0.07,0.0,distance(dw,vec2(0.42,-0.26)));",
-    /* the caustic is a flattened arc against the far wall, not a disc */
-    "  float caustic=smoothstep(0.20,0.0,distance(dw*vec2(1.0,2.7),vec2(0.05,0.70)*vec2(1.0,2.7)));",
-    "  float lit=0.55*core+0.035*halo+0.16*second+0.13*caustic;",
+    "  float shoulder=fres*smoothstep(0.58,0.96,r);",
+    "  col*=1.0-0.42*shoulder;",
+    /* Thin and late: a wide soft ring is the other half of the cartoon look.
+       This is close to a line, which is what the wall of a bubble is. */
+    "  float outline=smoothstep(0.955,0.988,r)*(1.0-smoothstep(0.992,1.0,r));",
+    "  col+=vec3(0.42)*outline;a=max(a,max(shoulder*0.5,outline));",
+    /* Two round dots and a blob below them read as a face — which is exactly
+       what made this look drawn. A soap film is a mirror: what you actually
+       see on one is the room smeared into arcs that follow the curvature,
+       plus one small catch where a light source lands. So: arcs, not dots.
+
+       The angle is measured in world space, so the reflections stay put
+       while the drop moves. */
+    "  float ang=atan(dw.y,dw.x);",
+    "  float band=smoothstep(0.55,0.97,r)*(1.0-smoothstep(0.975,1.0,r));",
+    /* the bright sweep along the upper-left shoulder */
+    "  float arc=band*pow(max(0.0,cos(ang+2.30)),3.0);",
+    /* a weaker, tighter one opposite it, the way a second source lands */
+    "  float arc2=band*pow(max(0.0,cos(ang-0.75)),9.0);",
+    /* light gathered and thrown against the lower wall, spread along it */
+    "  float caustic=band*pow(max(0.0,cos(ang-1.62)),7.0);",
+    /* one small catch, elongated across the curve rather than a circle */
+    "  vec2 sd=(dw-vec2(-0.33,-0.39))*vec2(1.0,2.3);",
+    "  float core=smoothstep(0.085,0.0,length(sd));",
+    "  float lit=0.40*arc+0.18*arc2+0.15*caustic+0.50*core;",
     "  col+=vec3(lit);a=max(a,lit);",
     /* smoothstep needs its edges in ascending order — reversed, the result
        is undefined by the spec, and the engines duly disagree: Chromium and
