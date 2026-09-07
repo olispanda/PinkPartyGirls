@@ -399,6 +399,13 @@
     function buildTextLayer() {
       var els = document.querySelectorAll(TEXT_SEL);
       if (!els.length) return;
+      /* Un-mark first: the class makes these transparent, and on a rebuild we
+         would otherwise measure that transparency and draw nothing. Restored
+         at the end of the same task, so nothing is ever painted uncovered. */
+      for (var u = 0; u < els.length; u++) {
+        els[u].classList.add("is-gl-measuring");
+        els[u].classList.remove("is-gl-text");
+      }
       var docH = Math.max(
         document.documentElement.scrollHeight,
         document.body ? document.body.scrollHeight : 0
@@ -441,6 +448,7 @@
         }
         el.classList.add("is-gl-text");
       }
+      for (var v = 0; v < els.length; v++) els[v].classList.remove("is-gl-measuring");
 
       gl.activeTexture(gl.TEXTURE2);
       gl.bindTexture(gl.TEXTURE_2D, pageTex);

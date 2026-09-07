@@ -2146,9 +2146,34 @@ html.has-water-cursor select {
    cursor also has to stop running, not just stop showing. */
 
 /* Text the WebGL scene has taken over (js/hero-gl.js draws it into a texture
-   so the bubble can refract it). Kept in the DOM and merely invisible: it is
-   the accessible copy, it is what a crawler reads, and its line boxes are
-   what the drawing is measured from. */
-.is-gl-text {
-  visibility: hidden;
+   so the bubble can refract it).
+
+   Made transparent rather than hidden, and the difference matters: visibility
+   takes an element out of interaction entirely, so buttons stopped being
+   clickable and text stopped being selectable. Transparent leaves the element
+   fully live — clicks, focus, hover, text selection and the selection
+   highlight all still work, and screen readers and crawlers still read it.
+   Only the paint is gone, because the canvas above is doing that. */
+.is-gl-text,
+.is-gl-text * {
+  color: transparent !important;
+  background-color: transparent !important;
+  border-color: transparent !important;
+  text-decoration-color: transparent !important;
+}
+
+/* While the scene measures these elements it removes the class above, and a
+   colour transition would then hand back a half-faded value — which is
+   exactly what drew the chip and the button label as ghosts. Measuring turns
+   transitions off for the instant it takes. */
+.is-gl-measuring,
+.is-gl-measuring * {
+  transition: none !important;
+}
+
+/* The highlight has to stay visible: it sits behind the glyphs, and the
+   canvas is transparent everywhere it isn't drawing one. */
+.is-gl-text ::selection,
+.is-gl-text::selection {
+  background: color-mix(in srgb, var(--accent) 45%, transparent);
 }
