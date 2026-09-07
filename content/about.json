@@ -11,19 +11,23 @@
   "members": [
     {
       "name": "Sarina Mollinari",
-      "role": "Mit ihrer Stimme verzaubert Sarina das Piublikum "
+      "role": "Vocals"
     },
     {
-      "name": "Member Name",
-      "role": "Guitar"
-    },
-    {
-      "name": "Member Name",
+      "name": "Leon Frei",
       "role": "Bass"
     },
     {
-      "name": "Member Name",
+      "name": "Elias Strebel",
       "role": "Drums"
+    },
+    {
+      "name": "Raffael Drachsel",
+      "role": "Keys"
+    },
+    {
+      "name": "Yaron Strebel",
+      "role": "Trumpet"
     }
   ],
   "quote": "\"Placeholder press quote about Pink Party Girls goes here.\"",
