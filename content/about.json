@@ -6,13 +6,25 @@
     "Placeholder bio paragraph two. A bit more about the sound, influences, and what a Pink Party Girls show feels like.",
     "Placeholder bio paragraph three. Recent milestones, releases, or anything else worth mentioning."
   ],
-  "lineup_eyebrow": "The Lineup",
+  "lineup_eyebrow": "The Band",
   "lineup_title": "Meet The Band",
   "members": [
-    { "name": "Member Name", "role": "Vocals", "photo": "" },
-    { "name": "Member Name", "role": "Guitar", "photo": "" },
-    { "name": "Member Name", "role": "Bass", "photo": "" },
-    { "name": "Member Name", "role": "Drums", "photo": "" }
+    {
+      "name": "Sarina Mollinari",
+      "role": "Mit ihrer Stimme verzaubert Sarina das Piublikum "
+    },
+    {
+      "name": "Member Name",
+      "role": "Guitar"
+    },
+    {
+      "name": "Member Name",
+      "role": "Bass"
+    },
+    {
+      "name": "Member Name",
+      "role": "Drums"
+    }
   ],
   "quote": "\"Placeholder press quote about Pink Party Girls goes here.\"",
   "quote_cite": "— Publication Name"
