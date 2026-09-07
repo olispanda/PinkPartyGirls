@@ -2,13 +2,24 @@
   "band_name": "Pink Party Girls",
   "footer_copy": "Pink Party Girls — 2026 ©",
   "social_preview": {
-    "description": "Four girls. One bad idea. Way too much pink.",
-    "image": ""
+    "description": "Four girls. One bad idea. Way too much pink."
   },
   "social": [
-    { "label": "Instagram", "url": "#" },
-    { "label": "TikTok", "url": "#" },
-    { "label": "Spotify", "url": "#" },
-    { "label": "YouTube", "url": "#" }
+    {
+      "label": "Instagram",
+      "url": "#https://www.instagram.com/pink_party_girls?stkn=MWdvYzdxbDUyZ3FnOQ=="
+    },
+    {
+      "label": "TikTok",
+      "url": "#"
+    },
+    {
+      "label": "Spotify",
+      "url": "#"
+    },
+    {
+      "label": "YouTube",
+      "url": "#https://youtube.com/@pink_party_girls?si=WP4iL1e9pLCDX-cL"
+    }
   ]
 }
