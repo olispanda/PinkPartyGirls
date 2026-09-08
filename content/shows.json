@@ -6,15 +6,13 @@
       "date": "2026-09-14",
       "title": "Winterthur",
       "location": "Dachterasse zum Wiedehopf Haldenstrasse 69 8400 Winterthur",
-      "free": false,
-      "tickets_url": "#Eintritt frei, Kollekte"
+      "free": false
     },
     {
       "date": "2027-05-14",
       "title": "Roxy Zürich",
       "location": "Zinistrasse 7, 8004 Zürich",
-      "free": true,
-      "tickets_url": "#Eintritt Frei, Kollekte"
+      "free": false
     }
   ]
 }
