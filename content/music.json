@@ -2,11 +2,52 @@
   "title": "Music",
   "lede": "Placeholder header copy — every release, all in one place.",
   "releases": [
-    { "title": "Track Title", "type": "Single", "year": "2026", "cover": "", "spotify": "#", "apple": "#", "youtube": "#" },
-    { "title": "Track Title", "type": "Single", "year": "2025", "cover": "", "spotify": "#", "apple": "#", "youtube": "#" },
-    { "title": "EP Title", "type": "EP", "year": "2025", "cover": "", "spotify": "#", "apple": "#", "youtube": "#" },
-    { "title": "Track Title", "type": "Single", "year": "2024", "cover": "", "spotify": "#", "apple": "#", "youtube": "#" },
-    { "title": "Track Title", "type": "Single", "year": "2024", "cover": "", "spotify": "#", "apple": "#", "youtube": "#" },
-    { "title": "Album Title", "type": "Album", "year": "2023", "cover": "", "spotify": "#", "apple": "#", "youtube": "#" }
+    {
+      "title": "Ain't nobody",
+      "year": "2026",
+      "spotify": "#",
+      "apple": "#",
+      "youtube": "#"
+    },
+    {
+      "title": "Track Title",
+      "type": "Single",
+      "year": "2025",
+      "spotify": "#",
+      "apple": "#",
+      "youtube": "#"
+    },
+    {
+      "title": "EP Title",
+      "type": "EP",
+      "year": "2025",
+      "spotify": "#",
+      "apple": "#",
+      "youtube": "#"
+    },
+    {
+      "title": "Track Title",
+      "type": "Single",
+      "year": "2024",
+      "spotify": "#",
+      "apple": "#",
+      "youtube": "#"
+    },
+    {
+      "title": "Track Title",
+      "type": "Single",
+      "year": "2024",
+      "spotify": "#",
+      "apple": "#",
+      "youtube": "#"
+    },
+    {
+      "title": "Album Title",
+      "type": "Album",
+      "year": "2023",
+      "spotify": "#",
+      "apple": "#",
+      "youtube": "#"
+    }
   ]
 }
