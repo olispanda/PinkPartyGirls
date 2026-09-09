@@ -13,6 +13,12 @@
       "title": "Roxy Zürich",
       "location": "Zinistrasse 7, 8004 Zürich",
       "free": false
+    },
+    {
+      "date": "2027-02-09",
+      "title": "Hinwil",
+      "location": "Ueberlandstrasse 14, 8340 Hinwil",
+      "free": false
     }
   ]
 }
