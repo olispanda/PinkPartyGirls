@@ -14,19 +14,23 @@
     },
     {
       "name": "Leon Frei",
-      "role": "Bass"
+      "role": "Bass",
+      "photo": "/Assets/uploads/IMG_0072.jpeg"
     },
     {
       "name": "Elias Strebel",
-      "role": "Drums"
+      "role": "Drums",
+      "photo": "/Assets/uploads/IMG_0074.jpeg"
     },
     {
       "name": "Rafael Trachsel",
-      "role": "Keys"
+      "role": "Keys",
+      "photo": "/Assets/uploads/IMG_0069.jpeg"
     },
     {
       "name": "Yaron Strebel",
-      "role": "Trumpet"
+      "role": "Trumpet",
+      "photo": "/Assets/uploads/IMG_0075.jpeg"
     }
   ],
   "quote_cite": "— Publication Name"
