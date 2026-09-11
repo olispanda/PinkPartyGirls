@@ -50,6 +50,19 @@ Inhalte und Bilder bearbeiten (aber nicht `.pages.yml` oder die Collaborator-Lis
 Uploads landen automatisch in `Assets/uploads/`. Fürs Hero-Video eine komprimierte
 `.mp4` nehmen (idealerweise < 10 MB).
 
+**Grosse Dateien (Videos):** Direkt in Pages CMS lassen sich nur Dateien bis ca.
+**3 MB** hochladen – der Upload läuft über den Server von app.pagescms.org (Vercel),
+und der nimmt pro Anfrage höchstens 4,5 MB an (die Datei wird dabei noch um ein
+Drittel grösser kodiert). Das lässt sich im Repo nicht einstellen
+([Pages CMS Issue #284](https://github.com/pages-cms/pages-cms/issues/284)).
+Grössere Dateien deshalb über GitHub hochladen:
+
+1. **[github.com/olispanda/PinkPartyGirls/upload/main/Assets/uploads](https://github.com/olispanda/PinkPartyGirls/upload/main/Assets/uploads)**
+   öffnen (braucht einen GitHub-Account mit Schreibzugriff aufs Repo).
+2. Datei reinziehen → **Commit changes**. Im Browser geht das bis **25 MB** pro Datei.
+3. In Pages CMS beim Feld (z. B. **Startseite → Hero-Video**) auf die Datei klicken
+   und aus der Medienauswahl die neue Datei wählen → **Save**.
+
 ---
 
 ## Hosting: GitHub Pages + Domain `www.pinkpartygirls.ch`

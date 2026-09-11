@@ -50,7 +50,13 @@ content:
     path: content/home.json
     format: json
     fields:
-      - { name: hero_video, label: Hero-Video (mp4), type: file }
+      # Uploads through app.pagescms.org transit a Vercel function capped at
+      # 4.5 MB per request (base64 → ~3 MB file), so large videos go in via
+      # GitHub's web upload instead and are then picked here. See CMS-SETUP.md.
+      - name: hero_video
+        label: Hero-Video (mp4)
+        type: file
+        description: "Upload hier nur bis ca. 3 MB. Grössere Videos (bis 25 MB): auf https://github.com/olispanda/PinkPartyGirls/upload/main/Assets/uploads hochladen, danach hier auswählen."
       - { name: hero_logo, label: Hero-Logo, type: file }
       - { name: statement_heading, label: Aussage / Slogan, type: text }
       - { name: statement_button_label, label: Button-Text, type: string }
