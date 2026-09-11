@@ -133,11 +133,12 @@ content:
             label: Datum
             type: date
             options:
-              format: yyyy-MM-dd
+              time: true
+              format: "yyyy-MM-dd'T'HH:mm"
           - { name: title, label: Venue / Stadt, type: string }
           - { name: location, label: Adresse, type: string }
-          - { name: free, label: "Gratis-Konzert?", type: boolean, default: false, description: "Zeigt ein Gratis-Badge und ersetzt den Tickets-Button durch Gratis." }
-          - { name: tickets_url, label: Ticket-Link, type: string, required: false, description: "Optional, auch bei Gratis-Konzerten (z. B. für eine Anmeldung/RSVP). Leer lassen, wenn kein Link nötig ist." }
+          - { name: free, label: "Konzert auf Kollekte?", type: boolean, default: false, description: "Zeigt ein Auf-Kollekte-Badge und ersetzt den Tickets-Button durch Auf Kollekte." }
+          - { name: tickets_url, label: Ticket-Link, type: string, required: false, description: "Optional, auch bei Konzerten auf Kollekte (z. B. für eine Anmeldung/RSVP). Leer lassen, wenn kein Link nötig ist." }
 
   - name: contact
     label: Contact

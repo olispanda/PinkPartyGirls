@@ -1029,7 +1029,7 @@ html.snap-page {
   line-height: 1.2;
 }
 
-/* Gratis-Badge (see js/cms.js showItemHTML) — inline after the venue name. */
+/* Auf-Kollekte-Badge (see js/cms.js showItemHTML) — inline after the venue name. */
 .show__tag {
   display: inline-block;
   vertical-align: middle;
@@ -1044,11 +1044,13 @@ html.snap-page {
   letter-spacing: 0.05em;
   text-transform: uppercase;
   line-height: 1.5;
+  white-space: nowrap;
 }
 
 /* Keep the Tickets button optically centred against the two text lines. */
 .show .btn {
   align-self: center;
+  white-space: nowrap;
 }
 
 @media (max-width: 640px) {

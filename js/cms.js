@@ -233,6 +233,11 @@
     return { day: parts[0] || "", month: parts[1] || "" };
   }
 
+  function showTime(value) {
+    var m = /T(\d{2}):(\d{2})/.exec(String(value || ""));
+    return m ? m[1] + ":" + m[2] : "";
+  }
+
   function isPast(value) {
     var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value || ""));
     if (!m) return false;
@@ -247,19 +252,21 @@
     var dt = showDate(s.date);
     var isFree = !!s.free;
     var hasLink = s.tickets_url && s.tickets_url !== "#";
-    var label = isFree ? "Gratis" : "Tickets";
+    var label = isFree ? "Auf Kollekte" : "Tickets";
     var ticket =
       '<a href="' + esc(hasLink ? s.tickets_url : "#") + '"' +
       (hasLink ? linkAttrs(s.tickets_url) : "") +
       ' class="btn btn--outline' + (hasLink ? " btn--external" : "") + '">' +
       label + "</a>";
-    var tag = isFree ? ' <span class="show__tag">Gratis</span>' : "";
+    var tag = isFree ? ' <span class="show__tag">Auf Kollekte</span>' : "";
+    var time = showTime(s.date);
+    var location = (time ? time + " &middot; " : "") + esc(s.location);
     return (
       '<div class="show">' +
       '<div class="show__date"><span class="day">' + esc(dt.day) +
       '</span><span class="month">' + esc(dt.month) + "</span></div>" +
       '<div class="show__info"><h3>' + esc(s.title) + tag + "</h3>" +
-      "<p>" + esc(s.location) + "</p></div>" +
+      "<p>" + location + "</p></div>" +
       ticket +
       "</div>"
     );
