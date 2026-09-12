@@ -87,8 +87,8 @@
 
     /* A soap bubble as the reference shows it, read off its screenshots.
 
-       Through the middle the page shows barely changed, a touch enlarged as
-       through a weak lens. The real refraction lives in a band at the rim,
+       Through the middle the page shows as it is — the film is too thin to
+       bend anything. The refraction lives in a narrow band at the rim,
        where the eye looks through the wall edge-on and so through a long
        run of it: there the band shows what lies around the bubble, squeezed
        in towards the edge, so letters just outside reappear inside as thin
@@ -100,9 +100,10 @@
        something this canvas can do to a page it cannot see. It lives in a
        second canvas blended with overlay (FILM, below); only a faint
        coloured sheen is added here. */
-    "const float MAG = 1.08;",  // how much the middle enlarges
-    "const float BAND = 0.30;", // width of the rim band, in radii
-    "const float BEND = 0.20;", // how far beyond the edge the rim reaches, in
+    "const float MAG = 1.0;",   // how much the middle enlarges; 1 = not at
+                                // all, as in the reference
+    "const float BAND = 0.20;", // width of the rim band, in radii
+    "const float BEND = 0.14;", // how far beyond the edge the rim reaches, in
                                 // radii: everything out to there is squeezed
                                 // into the band
     "const float CA = 0.14;",   // how much further blue reaches than red,
@@ -168,11 +169,11 @@
     " if(r>=1.0||uAlpha<=0.004){vec4 p=scene(frag);gl_FragColor=vec4(p.rgb*p.a,p.a);return;}",
     /* the sphere: analytic normal of a hemisphere */
     " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
-    /* Where each pixel looks, as a radius: r/MAG through the middle — a
-       touch enlarged — plus a term rising with the square across the rim
+    /* Where each pixel looks, as a radius: r/MAG through the middle — just
+       r at MAG 1 — plus a term rising with the square across the rim
        band, so the very edge looks BEND beyond itself. Everything from just
        inside the band out to that far beyond the bubble is squeezed into
-       the band, harder towards the edge: letters crossing it curl into thick
+       the band, harder towards the edge: letters crossing it curl into thin
        arcs that hug the rim, a stroke just inside the left rim comes out as
        "(", and letters just outside show up a second time inside the edge —
        all as in the reference. (Pulling inwards, tried before, gave ")" and
