@@ -48,16 +48,20 @@
     "uniform float uSquash;",
     "uniform vec2 uSquashDir;",
 
-    /* Bubble shape. Numbers mean the same as their CSS counterparts in
-       the CSS version this replaced, so the shape stayed recognisable. */
-    "const float IOR = 0.66;",    // air → water-ish; lower bends harder
-    "const float THICK = 1.15;",  // past ~1.5 the content gets pushed out of
-                                 // the middle and the bubble reads as empty  // how far the bent ray travels, in radii
-    "const float DISP = 0.055;",  // spread between the three colour rays
-
-    "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,4.1414)))*43758.5453);}",
-    "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);",
-    " return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}",
+    /* A solid glass ball, the way a transmission material renders one (this
+       is what the reference does). The previous version was a soap bubble
+       with a painted film and drawn highlights, and that is exactly what
+       made it look like a cartoon: real glass has no colour of its own and
+       no outline, only what it bends and what it mirrors. */
+    "const float IOR = 1.45;",   // glass
+    "const float THICK = 0.55;", // how far the bent ray travels, in radii.
+                                 // Kept low: the middle stays close to true
+                                 // size and the effect gathers at the rim,
+                                 // where the content folds round the edge.
+    "const float CA = 0.05;",    // spread of the index across the spectrum;
+                                 // much more and every letter gets 3D-glasses
+                                 // ghosts, not just the ones at the rim
+    "const int SAMPLES = 5;",    // per colour band; fewer and the fringe steps
 
     /* object-fit: cover, in shader form */
     "vec2 coverUV(vec2 frag,vec2 res,vec2 tex){",
@@ -101,99 +105,72 @@
     " col=mix(col,txt.rgb,txt.a);",
     " return vec4(col,1.0);}",
 
+    /* One refracted look-up. The eye ray meets the sphere, Snell bends it,
+       and the bent ray is followed THICK radii in. t moves the index across
+       the spectrum, -1 at the red end to +1 at the blue. */
+    "vec4 bend(vec2 frag,vec3 n,float t){",
+    " vec2 o=refract(vec3(0.0,0.0,-1.0),n,1.0/(IOR*(1.0+CA*t))).xy;",
+    " return scene(frag+o*THICK*uRadius);}",
+
+    /* What the glass mirrors: a softly lit room, a little brighter where
+       light comes up off the floor. No light sources you could pick out — a
+       distinct window lands on the ball as a round spot, and a spot is
+       exactly what reads as drawn. Neutral, too: any tint here looks like a
+       coloured coating. Screen y points down. */
+    "vec3 env(vec3 d){",
+    " return vec3(0.10+0.16*smoothstep(0.0,1.0,d.y)+0.06*smoothstep(0.0,1.0,-d.y));}",
+
     "void main(){",
     " vec2 frag=vec2(vUv.x,1.0-vUv.y)*uRes;",
     " vec2 rel=frag-uBubble;",
-    /* squash along the direction of travel, the way the CSS drop does */
-    /* Two frames of reference, and mixing them up is what made the bubble
-       look like it was spinning. The squash runs along the direction of
-       travel, so its axes rotate — but only the shape may use them. The
-       highlights and the film belong to the world: a lamp does not swing
-       round the glass because the glass moved sideways. */
+    /* Squash along the direction of travel. Its axes rotate with the motion,
+       so only the shape may use them — see the normal below. */
     " vec2 ax=uSquashDir;vec2 ay=vec2(-ax.y,ax.x);",
     " vec2 loc=vec2(dot(rel,ax)/(1.0+uSquash),dot(rel,ay)/(1.0-uSquash*0.68));",
     " vec2 d=loc/uRadius;",
-    " vec2 dw=rel/uRadius;",
     " float r=length(d);",
-    " vec3 col;float a=1.0;",
-    " if(r<1.0&&uAlpha>0.004){",
-    /* the sphere: analytic normal of a hemisphere, same as the reference */
-    "  vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
-    "  float fres=pow(1.0-n.z,2.5);",
-    /* Real refraction rather than a hand-shaped falloff. The eye ray meets
-       the sphere, Snell bends it, and the bent ray is followed to where it
-       leaves — which magnifies evenly through the middle and swings hard at
-       the rim, the way glass actually behaves. The previous profile was
-       deliberately flat in the centre and barely enlarged anything, which is
-       what made it look weak next to the reference.
+    " if(r>=1.0||uAlpha<=0.004){vec4 p=scene(frag);gl_FragColor=vec4(p.rgb*p.a,p.a);return;}",
+    /* the sphere: analytic normal of a hemisphere */
+    " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
+    /* The normal is found in the squashed frame, whose axes rotate with the
+       direction of travel, but everything it drives — the bent rays, the
+       reflection — belongs to the world. Rotated back here, once; mixing
+       the two frames is what used to make the bubble look like it spun. */
+    " vec3 nw=vec3(ax*n.x+ay*n.y,n.z);",
+    /* Dispersion as a spectrum rather than three copies. Each colour band
+       is swept by several rays at neighbouring indices, so the fringe comes
+       out as a smooth rainbow edge instead of three offset ghosts.
 
-       Dispersion is done properly too: three rays at slightly different
-       indices, since that is where a real fringe comes from. */
-    "  vec3 eye=vec3(0.0,0.0,-1.0);",
-    "  float w=noise(dw*2.3+uTime*0.06)-0.5;",
-    "  float th=THICK*uRadius*(1.0+w*0.05);",
-    /* The normal lives in the squashed frame, whose axes rotate with the
-       direction of travel, so the bent ray comes out in that frame too. It
-       has to be rotated back before it can be added to a world-space
-       position — otherwise the whole displacement swings round as you move,
-       which is the spinning that was left after fixing the highlights. */
-    "  vec2 bR=refract(eye,n,IOR*(1.0-DISP)).xy;",
-    "  vec2 bG=refract(eye,n,IOR).xy;",
-    "  vec2 bB=refract(eye,n,IOR*(1.0+DISP)).xy;",
-    "  vec2 sp=frag+(ax*bG.x+ay*bG.y)*th;",
-    "  vec2 spR=frag+(ax*bR.x+ay*bR.y)*th;",
-    "  vec2 spB=frag+(ax*bB.x+ay*bB.y)*th;",
-    "  vec4 sR=scene(spR),sG=scene(sp),sB=scene(spB);",
-    "  vec4 bent=vec4(sR.r,sG.g,sB.b,max(sG.a,max(sR.a,sB.a)));",
-    "  col=bent.rgb;a=bent.a;",
-    /* soap film: thin at the rim, so that is where the colour sits */
-    "  float film=smoothstep(0.12,0.95,r)*(0.40+0.60*noise(dw*2.1-uTime*0.05));",
-    "  vec3 tint=mix(uAccent,vec3(0.55,0.72,1.0),0.5+0.5*sin(r*5.5+uTime*0.35+noise(dw*1.4)*2.0));",
-    "  col=mix(col,col*0.72+tint*0.62,film*0.42);",
-    /* Over the sections the scene behind is transparent, so without this the
-       wall contributes no opacity at all and the bubble thins out to a bare
-       outline. */
-    "  a=max(a,film*0.34);",
-    /* rim shoulder, wide and soft — a hard ring is the giveaway */
-    /* No drawn edge at all. A stroke at the silhouette — however thin — is
-       read as an outline, and darkening the shoulder to compensate is what
-       turned the whole thing grey. What a bubble actually has is Fresnel:
-       the wall returns more light the more edge-on it is seen, so it
-       brightens toward the rim and fades out with nothing drawn at the
-       boundary itself. */
-    "  float rim=fres*smoothstep(0.30,0.99,r)*(1.0-smoothstep(0.94,1.0,r));",
-    "  col+=uAccent*rim*0.30+vec3(0.16)*rim;",
-    "  a=max(a,rim*0.75);",
-    /* Two round dots and a blob below them read as a face — which is exactly
-       what made this look drawn. A soap film is a mirror: what you actually
-       see on one is the room smeared into arcs that follow the curvature,
-       plus one small catch where a light source lands. So: arcs, not dots.
+       Summed premultiplied: over the sections the scene is transparent
+       except for the text, and averaging straight colour there would drag
+       every anti-aliased edge towards black. */
+    " vec3 acc=vec3(0.0),cov=vec3(0.0);",
+    " for(int i=0;i<SAMPLES;i++){",
+    "  float s=(float(i)+0.5)/float(SAMPLES)*0.6667;",
+    "  vec4 cr=bend(frag,nw,-1.0+s);",
+    "  vec4 cg=bend(frag,nw,-0.3333+s);",
+    "  vec4 cb=bend(frag,nw,0.3333+s);",
+    "  acc+=vec3(cr.r*cr.a,cg.g*cg.a,cb.b*cb.a);",
+    "  cov+=vec3(cr.a,cg.a,cb.a);}",
+    " vec3 prem=acc/float(SAMPLES);",
+    " float a=dot(cov,vec3(1.0/(3.0*float(SAMPLES))));",
+    /* Fresnel (Schlick, glass): four percent mirror head-on, nearly all
+       mirror at grazing. That is the only edge the ball gets — a thin
+       lighter line where the room shows in the glass.
 
-       The angle is measured in world space, so the reflections stay put
-       while the drop moves. */
-    "  float ang=atan(dw.y,dw.x);",
-    "  float band=smoothstep(0.55,0.97,r)*(1.0-smoothstep(0.975,1.0,r));",
-    /* the bright sweep along the upper-left shoulder */
-    "  float arc=band*pow(max(0.0,cos(ang+2.30)),3.0);",
-    /* a weaker, tighter one opposite it, the way a second source lands */
-    "  float arc2=band*pow(max(0.0,cos(ang-0.75)),9.0);",
-    /* light gathered and thrown against the lower wall, spread along it */
-    "  float caustic=band*pow(max(0.0,cos(ang-1.62)),7.0);",
-    /* one small catch, elongated across the curve rather than a circle */
-    "  vec2 sd=(dw-vec2(-0.33,-0.39))*vec2(1.0,2.3);",
-    "  float core=smoothstep(0.085,0.0,length(sd));",
-    "  float lit=0.40*arc+0.18*arc2+0.15*caustic+0.50*core;",
-    "  col+=vec3(lit);a=max(a,lit);",
-    /* smoothstep needs its edges in ascending order — reversed, the result
-       is undefined by the spec, and the engines duly disagree: Chromium and
-       WebKit gave the bubble, Firefox dropped it entirely. */
-    "  float edge=1.0-smoothstep(0.985,1.0,r);",
-    "  vec4 plain=scene(frag);",
-    "  float k=uAlpha*edge;",
-    "  col=mix(plain.rgb,col,k);a=mix(plain.a,a,k);",
-    " }else{vec4 p=scene(frag);col=p.rgb;a=p.a;}",
+       Added as light rather than laid over the transmission. Replacing the
+       bent image with a dim room at the rim is what drew a dark outline
+       round the ball; adding it lifts the edge instead, and — premultiplied,
+       with the alpha left alone — it lightens the page over the sections the
+       same way it lightens the hero. */
+    " float F=0.04+0.96*pow(1.0-n.z,5.0);",
+    " prem+=env(reflect(vec3(0.0,0.0,-1.0),nw))*F;",
+    /* a pixel and a half of feathering at the silhouette, whatever the size */
+    " float edge=1.0-smoothstep(1.0-1.5/uRadius,1.0,r);",
+    " vec4 plain=scene(frag);",
+    " float k=uAlpha*edge;",
     /* premultiplied: the canvas composites over the page below */
-    " gl_FragColor=vec4(col*a,a);}"
+    " gl_FragColor=mix(vec4(plain.rgb*plain.a,plain.a),vec4(prem,a),k);}"
   ].join("\n");
 
   function compile(gl, type, src) {
@@ -551,7 +528,15 @@
     );
 
     var finePointer = window.matchMedia && window.matchMedia("(pointer: fine)").matches;
-    var SIZE = finePointer ? 136 : 172;
+    /* Sized to the viewport, not fixed: a glass ball only reads as one when
+       it is big enough to bend a few letters at once. Smaller than that and
+       the rim — where all the effect lives — is a handful of pixels. */
+    function bubbleSize() {
+      var m = Math.min(W, H);
+      return finePointer
+        ? Math.max(200, Math.min(360, m * 0.36))
+        : Math.max(170, Math.min(260, m * 0.5));
+    }
     var target = { x: W / 2, y: H / 2 };
     var pos = { x: W / 2, y: H / 2, vx: 0, vy: 0 };
     var alpha = finePointer ? 0 : 1;
@@ -630,12 +615,13 @@
       gl.uniform1f(U.uScroll, (window.scrollY || window.pageYOffset || 0) * DPR);
       gl.uniform1f(U.uHasPage, pageReady ? 1 : 0);
       gl.uniform2f(U.uBubble, pos.x * DPR, pos.y * DPR);
-      gl.uniform1f(U.uRadius, (SIZE / 2) * DPR);
+      gl.uniform1f(U.uRadius, (bubbleSize() / 2) * DPR);
       gl.uniform1f(U.uAlpha, alpha);
       gl.uniform1f(U.uTime, (now - t0) / 1000);
       gl.uniform3f(U.uAccent, accent[0], accent[1], accent[2]);
       gl.uniform1f(U.uHasVideo, hasVideo);
-      gl.uniform1f(U.uSquash, Math.min(speed * 0.011, 0.3));
+      // Glass barely gives: a hint of stretch in motion, not a jelly drop.
+      gl.uniform1f(U.uSquash, Math.min(speed * 0.005, 0.1));
       gl.uniform2f(U.uSquashDir, Math.cos(angle), Math.sin(angle));
 
       gl.clearColor(0, 0, 0, 0);
