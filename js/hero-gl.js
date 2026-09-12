@@ -26,6 +26,23 @@
   var VERT =
     "attribute vec2 aPos;varying vec2 vUv;void main(){vUv=aPos*0.5+0.5;gl_Position=vec4(aPos,0.0,1.0);}";
 
+  /* The outline. It wobbles all the time, slowly and organically, the way a
+     floating soap bubble does — even at rest — rather than stretching along
+     the direction of travel.
+
+     Standing waves, the way a real bubble's surface rings: an oval that swaps
+     between lying and standing, with a softer three- and four-lobed shiver
+     on top, each at its own tempo so the sum never visibly repeats. The axes
+     drift slowly as well, so it is never quite the same oval twice. Shared by
+     both canvases so their edges agree. a is the angle round the centre, t
+     the time in seconds; the result scales the radius. */
+  var WOBBLE = [
+    "float wobble(float a,float t){",
+    " return 0.040*cos(2.0*(a-0.07*t))*sin(1.3*t)",
+    "  +0.022*cos(3.0*(a+0.05*t)+1.1)*sin(1.9*t+1.3)",
+    "  +0.012*cos(4.0*(a-0.04*t)+2.3)*sin(2.6*t+0.4);}"
+  ].join("\n");
+
   var FRAG = [
     "precision highp float;",
     "varying vec2 vUv;",
@@ -45,23 +62,27 @@
     "uniform float uTime;",
     "uniform vec3 uAccent;",
     "uniform float uHasVideo;",
-    "uniform float uSquash;",
-    "uniform vec2 uSquashDir;",
+    WOBBLE,
 
-    /* A solid glass ball, the way a transmission material renders one (this
-       is what the reference does). The previous version was a soap bubble
-       with a painted film and drawn highlights, and that is exactly what
-       made it look like a cartoon: real glass has no colour of its own and
-       no outline, only what it bends and what it mirrors. */
-    "const float IOR = 1.45;",   // glass
-    "const float THICK = 0.55;", // how far the bent ray travels, in radii.
-                                 // Kept low: the middle stays close to true
-                                 // size and the effect gathers at the rim,
-                                 // where the content folds round the edge.
-    "const float CA = 0.05;",    // spread of the index across the spectrum;
-                                 // much more and every letter gets 3D-glasses
-                                 // ghosts, not just the ones at the rim
-    "const int SAMPLES = 5;",    // per colour band; fewer and the fringe steps
+    /* A soap bubble as the reference shows it, read off its screenshots.
+
+       Through the middle the page shows practically unmoved — the film is
+       too thin to bend anything. All the refraction lives in a narrow band
+       at the rim, where the eye looks through the wall edge-on and so
+       through a long run of it: there the picture is pulled inwards and
+       folded, so letters crossing the edge curl into arcs along it, with a
+       fine rainbow where the colours part.
+
+       The milky, iridescent body is not drawn here at all. It lightens
+       whatever is behind in proportion to how light that is — milky over
+       pink, barely there over black — and that is a blend mode, not
+       something this canvas can do to a page it cannot see. It lives in a
+       second canvas blended with soft-light (FILM, below). */
+    "const float BAND = 0.16;", // width of the refracting rim, in radii
+    "const float BEND = 0.30;", // how far the rim pulls the picture in, in radii
+    "const float IOR = 1.33;",  // soapy water
+    "const float CA = 0.08;",   // spread of the index across the spectrum
+    "const int SAMPLES = 3;",   // rays per colour band
 
     /* object-fit: cover, in shader form */
     "vec2 coverUV(vec2 frag,vec2 res,vec2 tex){",
@@ -105,72 +126,103 @@
     " col=mix(col,txt.rgb,txt.a);",
     " return vec4(col,1.0);}",
 
-    /* One refracted look-up. The eye ray meets the sphere, Snell bends it,
-       and the bent ray is followed THICK radii in. t moves the index across
-       the spectrum, -1 at the red end to +1 at the blue. */
-    "vec4 bend(vec2 frag,vec3 n,float t){",
+    /* One refracted look-up at spectral position t, -1 red to +1 blue. The
+       eye ray is bent by Snell at the surface; w ramps the bend in across
+       the rim band, so the middle is left alone. */
+    "vec4 bend(vec2 frag,vec3 n,float w,float t){",
     " vec2 o=refract(vec3(0.0,0.0,-1.0),n,1.0/(IOR*(1.0+CA*t))).xy;",
-    " return scene(frag+o*THICK*uRadius);}",
-
-    /* What the glass mirrors: a softly lit room, a little brighter where
-       light comes up off the floor. No light sources you could pick out — a
-       distinct window lands on the ball as a round spot, and a spot is
-       exactly what reads as drawn. Neutral, too: any tint here looks like a
-       coloured coating. Screen y points down. */
-    "vec3 env(vec3 d){",
-    " return vec3(0.10+0.16*smoothstep(0.0,1.0,d.y)+0.06*smoothstep(0.0,1.0,-d.y));}",
+    " return scene(frag+o*w*BEND*uRadius);}",
 
     "void main(){",
     " vec2 frag=vec2(vUv.x,1.0-vUv.y)*uRes;",
     " vec2 rel=frag-uBubble;",
-    /* Squash along the direction of travel. Its axes rotate with the motion,
-       so only the shape may use them — see the normal below. */
-    " vec2 ax=uSquashDir;vec2 ay=vec2(-ax.y,ax.x);",
-    " vec2 loc=vec2(dot(rel,ax)/(1.0+uSquash),dot(rel,ay)/(1.0-uSquash*0.68));",
-    " vec2 d=loc/uRadius;",
+    /* position in radii of the wobbling outline (see WOBBLE) */
+    " vec2 d=rel/(uRadius*(1.0+wobble(atan(rel.y,rel.x+1e-6),uTime)));",
     " float r=length(d);",
     " if(r>=1.0||uAlpha<=0.004){vec4 p=scene(frag);gl_FragColor=vec4(p.rgb*p.a,p.a);return;}",
     /* the sphere: analytic normal of a hemisphere */
     " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
-    /* The normal is found in the squashed frame, whose axes rotate with the
-       direction of travel, but everything it drives — the bent rays, the
-       reflection — belongs to the world. Rotated back here, once; mixing
-       the two frames is what used to make the bubble look like it spun. */
-    " vec3 nw=vec3(ax*n.x+ay*n.y,n.z);",
-    /* Dispersion as a spectrum rather than three copies. Each colour band
-       is swept by several rays at neighbouring indices, so the fringe comes
-       out as a smooth rainbow edge instead of three offset ghosts.
-
-       Summed premultiplied: over the sections the scene is transparent
+    /* 0 through the middle, rising to full strength across the rim band */
+    " float w=smoothstep(1.0-BAND,1.0-BAND*0.3,r);",
+    /* A spectrum rather than three copies: each colour band is swept by a
+       few rays at neighbouring indices, so the fringe is a smooth rainbow.
+       Summed premultiplied — over the sections the scene is transparent
        except for the text, and averaging straight colour there would drag
        every anti-aliased edge towards black. */
-    " vec3 acc=vec3(0.0),cov=vec3(0.0);",
+    " vec3 prem=vec3(0.0),cov=vec3(0.0);",
     " for(int i=0;i<SAMPLES;i++){",
     "  float s=(float(i)+0.5)/float(SAMPLES)*0.6667;",
-    "  vec4 cr=bend(frag,nw,-1.0+s);",
-    "  vec4 cg=bend(frag,nw,-0.3333+s);",
-    "  vec4 cb=bend(frag,nw,0.3333+s);",
-    "  acc+=vec3(cr.r*cr.a,cg.g*cg.a,cb.b*cb.a);",
+    "  vec4 cr=bend(frag,n,w,-1.0+s);",
+    "  vec4 cg=bend(frag,n,w,-0.3333+s);",
+    "  vec4 cb=bend(frag,n,w,0.3333+s);",
+    "  prem+=vec3(cr.r*cr.a,cg.g*cg.a,cb.b*cb.a);",
     "  cov+=vec3(cr.a,cg.a,cb.a);}",
-    " vec3 prem=acc/float(SAMPLES);",
+    " prem/=float(SAMPLES);",
     " float a=dot(cov,vec3(1.0/(3.0*float(SAMPLES))));",
-    /* Fresnel (Schlick, glass): four percent mirror head-on, nearly all
-       mirror at grazing. That is the only edge the ball gets — a thin
-       lighter line where the room shows in the glass.
-
-       Added as light rather than laid over the transmission. Replacing the
-       bent image with a dim room at the rim is what drew a dark outline
-       round the ball; adding it lifts the edge instead, and — premultiplied,
-       with the alpha left alone — it lightens the page over the sections the
-       same way it lightens the hero. */
-    " float F=0.04+0.96*pow(1.0-n.z,5.0);",
-    " prem+=env(reflect(vec3(0.0,0.0,-1.0),nw))*F;",
+    /* The wall seen edge-on catches a hairline of light. Added, so it
+       lightens whatever is behind; the film canvas does the rest. */
+    " prem+=vec3(0.16)*pow(1.0-n.z,6.0);",
     /* a pixel and a half of feathering at the silhouette, whatever the size */
     " float edge=1.0-smoothstep(1.0-1.5/uRadius,1.0,r);",
     " vec4 plain=scene(frag);",
     " float k=uAlpha*edge;",
     /* premultiplied: the canvas composites over the page below */
     " gl_FragColor=mix(vec4(plain.rgb*plain.a,plain.a),vec4(prem,a),k);}"
+  ].join("\n");
+
+  /* The film: the bubble's body, drawn into a small canvas of its own that
+     the browser blends onto the page with mix-blend-mode: soft-light.
+
+     Soft-light is the point. A value of one half leaves the page as it is;
+     above that it lightens, and it lightens light things far more than dark
+     ones — which is what the reference bubble does: milky over a pale
+     background, a faint sheen over black. Per channel, too, so where the
+     film favours a colour it tints the page towards it. The browser does
+     this against the real page pixels, sections included — the one thing
+     the main canvas cannot, since it never sees the page behind it. */
+  var FILM = [
+    "precision highp float;",
+    "varying vec2 vUv;",
+    "uniform vec2 uRes;",
+    "uniform float uRadius;",
+    "uniform float uAlpha;",
+    "uniform float uTime;",
+    WOBBLE,
+
+    "const float FILM_N = 1.33;", // refractive index of soapy water
+    "const float MILK = 0.72;",   // how milky the body is, 0 … 1
+    "const float IRI = 0.32;",    // how strongly interference colours it;
+                                  // much more and it bands like an oil slick
+
+    "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,4.1414)))*43758.5453);}",
+    "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);",
+    " return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}",
+
+    /* Thin-film interference: light off the film's front and back surfaces
+       interferes, and which wavelengths survive depends on the thickness (d,
+       in nanometres) and the angle inside the film. Runs 0..2, averages 1. */
+    "vec3 film(float d,float cosT){",
+    " return 1.0-cos(12.566*FILM_N*d*cosT/vec3(650.0,532.0,450.0));}",
+
+    "void main(){",
+    " vec2 rel=(vec2(vUv.x,1.0-vUv.y)-0.5)*uRes;",
+    /* the same outline as the main canvas, so the two edges agree */
+    " vec2 d=rel/(uRadius*(1.0+wobble(atan(rel.y,rel.x+1e-6),uTime)));",
+    " float r=length(d);",
+    " if(r>=1.0||uAlpha<=0.004){gl_FragColor=vec4(0.0);return;}",
+    " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
+    " vec2 w=n.xy;",
+    /* thinner at the top where the film drains, stirred by slow swirls */
+    " float th=mix(300.0,620.0,0.5+0.5*w.y)",
+    "  +240.0*(noise(w*1.3+vec2(uTime*0.05,-uTime*0.035))-0.5)",
+    "  +120.0*(noise(w*2.7-uTime*0.06)-0.5);",
+    " float sinT=sqrt(1.0-n.z*n.z)/FILM_N;",
+    " vec3 tint=mix(vec3(1.0),film(th,sqrt(1.0-sinT*sinT)),IRI);",
+    /* milkier towards the rim, where the wall is seen edge-on */
+    " float lift=mix(MILK,1.0,pow(1.0-n.z,2.0));",
+    " vec3 s=0.5+0.5*clamp(tint*lift,0.0,1.0);",
+    " float k=uAlpha*(1.0-smoothstep(1.0-1.5/uRadius,1.0,r));",
+    " gl_FragColor=vec4(s*k,k);}"
   ].join("\n");
 
   function compile(gl, type, src) {
@@ -182,6 +234,29 @@
       return null;
     }
     return s;
+  }
+
+  // Compile and link against the shared vertex shader, and set up the one
+  // oversized triangle that covers the canvas.
+  function program(gl, frag) {
+    var vs = compile(gl, gl.VERTEX_SHADER, VERT);
+    var fs = compile(gl, gl.FRAGMENT_SHADER, frag);
+    if (!vs || !fs) return null;
+    var p = gl.createProgram();
+    gl.attachShader(p, vs);
+    gl.attachShader(p, fs);
+    gl.linkProgram(p);
+    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
+      if (window.console) console.warn("hero-gl:", gl.getProgramInfoLog(p));
+      return null;
+    }
+    gl.useProgram(p);
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    var aPos = gl.getAttribLocation(p, "aPos");
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+    return p;
   }
 
   function init() {
@@ -206,32 +281,15 @@
       canvas.getContext("experimental-webgl", { alpha: true, antialias: false });
     if (!gl) return; // no WebGL — the DOM hero stays exactly as it is
 
-    var vs = compile(gl, gl.VERTEX_SHADER, VERT);
-    var fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
-    if (!vs || !fs) return;
-    var prog = gl.createProgram();
-    gl.attachShader(prog, vs);
-    gl.attachShader(prog, fs);
-    gl.linkProgram(prog);
-    if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-      if (window.console) console.warn("hero-gl:", gl.getProgramInfoLog(prog));
-      return;
-    }
-    gl.useProgram(prog);
+    var prog = program(gl, FRAG);
+    if (!prog) return;
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // premultiplied
-
-    var buf = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, buf);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
-    var aPos = gl.getAttribLocation(prog, "aPos");
-    gl.enableVertexAttribArray(aPos);
-    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
 
     var U = {};
     [
       "uVideo", "uLogo", "uRes", "uVideoRes", "uLogoRect", "uHeroRect", "uPage", "uPageSize", "uScroll", "uHasPage", "uBubble",
-      "uRadius", "uAlpha", "uTime", "uAccent", "uHasVideo", "uSquash", "uSquashDir"
+      "uRadius", "uAlpha", "uTime", "uAccent", "uHasVideo"
     ].forEach(function (n) {
       U[n] = gl.getUniformLocation(prog, n);
     });
@@ -280,6 +338,27 @@
     loadLogo();
 
     document.body.appendChild(canvas);
+
+    /* The film canvas (see FILM). Sized to the bubble rather than the
+       viewport and moved with a transform, so the browser only has to blend
+       the patch the bubble covers. Optional: without it the bubble still
+       refracts, it just has no body. */
+    var film = document.createElement("canvas");
+    film.className = "hero-gl-film";
+    film.setAttribute("aria-hidden", "true");
+    var fgl = film.getContext("webgl", { alpha: true, antialias: false, premultipliedAlpha: true });
+    var fprog = fgl && program(fgl, FILM);
+    var FU = {};
+    var filmPx = 0;
+    if (fprog) {
+      ["uRes", "uRadius", "uAlpha", "uTime"].forEach(function (n) {
+        FU[n] = fgl.getUniformLocation(fprog, n);
+      });
+      document.body.appendChild(film);
+    } else {
+      film = null;
+    }
+
     /* The DOM hero is not hidden yet. It is the fallback, and hiding it before
        anything has been drawn is how a failure here turns into a black hole
        where the hero used to be — which is exactly what happened the first
@@ -287,7 +366,9 @@
        arrives the canvas removes itself. */
     var painted = false;
     setTimeout(function () {
-      if (!painted && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      if (painted) return;
+      if (canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      if (film && film.parentNode) film.parentNode.removeChild(film);
     }, 4000);
 
     /* ---- page text as a texture ------------------------------------------
@@ -534,14 +615,13 @@
     function bubbleSize() {
       var m = Math.min(W, H);
       return finePointer
-        ? Math.max(200, Math.min(360, m * 0.36))
+        ? Math.max(180, Math.min(360, m * 0.31))
         : Math.max(170, Math.min(260, m * 0.5));
     }
     var target = { x: W / 2, y: H / 2 };
     var pos = { x: W / 2, y: H / 2, vx: 0, vy: 0 };
     var alpha = finePointer ? 0 : 1;
     var alphaTarget = finePointer ? 0 : 1;
-    var angle = 0;
 
     if (finePointer) {
       window.addEventListener("pointermove", function (e) {
@@ -589,8 +669,6 @@
       pos.vy = (pos.vy + (target.y - pos.y) * 0.17) * 0.74;
       pos.x += pos.vx;
       pos.y += pos.vy;
-      var speed = Math.sqrt(pos.vx * pos.vx + pos.vy * pos.vy);
-      if (speed > 0.4) angle = Math.atan2(pos.vy, pos.vx);
       alpha += (alphaTarget - alpha) * 0.16;
 
       if (video && video.readyState >= 2 && video.videoWidth) {
@@ -620,13 +698,30 @@
       gl.uniform1f(U.uTime, (now - t0) / 1000);
       gl.uniform3f(U.uAccent, accent[0], accent[1], accent[2]);
       gl.uniform1f(U.uHasVideo, hasVideo);
-      // Glass barely gives: a hint of stretch in motion, not a jelly drop.
-      gl.uniform1f(U.uSquash, Math.min(speed * 0.005, 0.1));
-      gl.uniform2f(U.uSquashDir, Math.cos(angle), Math.sin(angle));
 
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      if (film) {
+        var side = Math.ceil(bubbleSize() * 1.2); // room for the wobble
+        var px = Math.round(side * DPR);
+        if (px !== filmPx) {
+          filmPx = px;
+          film.width = film.height = px;
+          film.style.width = film.style.height = side + "px";
+          fgl.viewport(0, 0, px, px);
+        }
+        film.style.transform =
+          "translate3d(" + (pos.x - side / 2) + "px," + (pos.y - side / 2) + "px,0)";
+        fgl.uniform2f(FU.uRes, px, px);
+        fgl.uniform1f(FU.uRadius, (bubbleSize() / 2) * DPR);
+        fgl.uniform1f(FU.uAlpha, alpha);
+        fgl.uniform1f(FU.uTime, (now - t0) / 1000);
+        fgl.clearColor(0, 0, 0, 0);
+        fgl.clear(fgl.COLOR_BUFFER_BIT);
+        fgl.drawArrays(fgl.TRIANGLES, 0, 3);
+      }
       if (!painted) {
         painted = true;
         hero.classList.add("is-gl");

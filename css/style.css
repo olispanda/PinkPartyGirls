@@ -1731,6 +1731,20 @@ html.js-anim .reveal.is-in {
   pointer-events: none;
 }
 
+/* The bubble's body (FILM in js/hero-gl.js): a small canvas that follows the
+   bubble and lightens what is behind it the way soft light does — milky over
+   pale colours, barely there over dark ones. Later in the DOM than .hero-gl,
+   so it sits on top of it at the same z-index and blends with it too. */
+.hero-gl-film {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 199;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  will-change: transform;
+}
+
 .slide-home.is-gl .slide-home__video,
 .slide-home.is-gl .slide-home__overlay,
 .slide-home.is-gl .slide-home__logo {
