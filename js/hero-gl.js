@@ -107,8 +107,8 @@
                                 // mirrored drips instead of curving
     "const float CA = 0.08;",   // how much further blue is pulled than red
     "const int SAMPLES = 3;",   // rays per colour band
-    "const float SHEEN = 0.012;",    // film colour over the middle, as added light
-    "const float SHEEN_RIM = 0.045;", // … and extra towards the rim
+    "const float SHEEN = 0.006;",    // film colour over the middle, as added light
+    "const float SHEEN_RIM = 0.025;", // … and extra towards the rim
 
     /* object-fit: cover, in shader form */
     "vec2 coverUV(vec2 frag,vec2 res,vec2 tex){",
@@ -228,8 +228,8 @@
     WOBBLE,
     FILMPATTERN,
 
-    "const float MILK = 0.45;", // how milky the body is, 0 … 1
-    "const float IRI = 0.10;",  // how strongly the film colours it. Overlay
+    "const float MILK = 0.3;",  // how milky the body is, 0 … 1
+    "const float IRI = 0.04;",  // how strongly the film colours it. Overlay
                                 // scales each channel on its own, so a little
                                 // goes a long way: at 0.6 it was an acid-trip
                                 // rainbow disc
@@ -244,7 +244,7 @@
     " vec3 tint=mix(vec3(1.0),filmColour(n,uTime),IRI);",
     /* milkier towards the rim, where the wall is seen edge-on */
     " float lift=mix(MILK,1.0,pow(1.0-n.z,2.0));",
-    " vec3 s=0.5+0.3*clamp(tint*lift,0.0,1.0);",
+    " vec3 s=0.5+0.2*clamp(tint*lift,0.0,1.0);",
     " float k=uAlpha*(1.0-smoothstep(1.0-1.5/uRadius,1.0,r));",
     " gl_FragColor=vec4(s*k,k);}"
   ].join("\n");
