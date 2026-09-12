@@ -90,9 +90,9 @@
        Through the middle the page shows practically unmoved — the film is
        too thin to bend anything. The refraction lives in a band at the rim,
        where the eye looks through the wall edge-on and so through a long
-       run of it: there the picture is pulled outwards, so letters near the
-       edge stretch and curve along it, with a fine rainbow where the
-       colours part.
+       run of it: there the band shows what lies around the bubble, squeezed
+       in towards the edge, so letters just outside reappear inside as thin
+       arcs hugging the rim, with a fine rainbow where the colours part.
 
        The milky, iridescent body is not drawn here at all. It lightens
        whatever is behind in proportion to how light that is — milky over
@@ -100,12 +100,11 @@
        something this canvas can do to a page it cannot see. It lives in a
        second canvas blended with overlay (FILM, below); only a faint
        coloured sheen is added here. */
-    "const float BAND = 0.35;", // width of the refracting rim, in radii
-    "const float BEND = 0.14;", // how far the edge pulls the picture out, in
-                                // radii. Keep it under BAND/2: past that the
-                                // mapping folds back and letters come out as
-                                // mirrored drips instead of curving
-    "const float CA = 0.08;",   // how much further blue is pulled than red
+    "const float BAND = 0.28;", // width of the refracting rim, in radii
+    "const float BEND = 0.22;", // how far beyond the edge the rim reaches, in
+                                // radii: the ring that far outside the bubble
+                                // is what gets squeezed into the band
+    "const float CA = 0.08;",   // how much further blue reaches than red
     "const int SAMPLES = 3;",   // rays per colour band
     "const float SHEEN = 0.006;",    // film colour over the middle, as added light
     "const float SHEEN_RIM = 0.025;", // … and extra towards the rim
@@ -152,11 +151,11 @@
     " col=mix(col,txt.rgb,txt.a);",
     " return vec4(col,1.0);}",
 
-    /* One look-up at spectral position t, -1 red to +1 blue: the picture
-       pulled outwards by `pull` radii — sampled that much further in along
-       dir — and blue a touch further than red, which is the fringe. */
-    "vec4 bend(vec2 frag,vec2 dir,float pull,float t){",
-    " return scene(frag-dir*pull*(1.0+CA*t)*uRadius);}",
+    /* One look-up at spectral position t, -1 red to +1 blue: the page
+       sampled `reach` radii further out along dir, and blue a touch further
+       than red, which is the fringe. */
+    "vec4 bend(vec2 frag,vec2 dir,float reach,float t){",
+    " return scene(frag+dir*reach*(1.0+CA*t)*uRadius);}",
 
     "void main(){",
     " vec2 frag=vec2(vUv.x,1.0-vUv.y)*uRes;",
@@ -167,13 +166,16 @@
     " if(r>=1.0||uAlpha<=0.004){vec4 p=scene(frag);gl_FragColor=vec4(p.rgb*p.a,p.a);return;}",
     /* the sphere: analytic normal of a hemisphere */
     " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
-    /* How far the picture is pulled out: nothing through the middle, rising
-       with the square across the rim band to BEND at the edge. Gentle enough
-       that the mapping never turns back on itself, so letters only stretch
-       and curve along the rim, and the sliver right under the edge slips
-       out of view — as in the reference. */
+    /* How far out the band looks: nothing through the middle, rising with
+       the square across the band to BEND at the edge. Looking outwards is
+       what the reference does — a vertical stroke just inside its left rim
+       comes out as "(", ends curling in, and letters just outside show up a
+       second time as a squeezed arc inside the edge. Pulling inwards, tried
+       before, gave ")" and hid those letters instead. This can never fold,
+       whatever the numbers: the further out a pixel sits, the further out
+       it looks. */
     " float u=max(0.0,r-(1.0-BAND))/BAND;",
-    " float pull=BEND*u*u;",
+    " float reach=BEND*u*u;",
     " vec2 dir=rel/max(length(rel),1e-4);",
     /* A spectrum rather than three copies: each colour band is swept by a
        few rays at neighbouring indices, so the fringe is a smooth rainbow.
@@ -183,9 +185,9 @@
     " vec3 prem=vec3(0.0),cov=vec3(0.0);",
     " for(int i=0;i<SAMPLES;i++){",
     "  float s=(float(i)+0.5)/float(SAMPLES)*0.6667;",
-    "  vec4 cr=bend(frag,dir,pull,-1.0+s);",
-    "  vec4 cg=bend(frag,dir,pull,-0.3333+s);",
-    "  vec4 cb=bend(frag,dir,pull,0.3333+s);",
+    "  vec4 cr=bend(frag,dir,reach,-1.0+s);",
+    "  vec4 cg=bend(frag,dir,reach,-0.3333+s);",
+    "  vec4 cb=bend(frag,dir,reach,0.3333+s);",
     "  prem+=vec3(cr.r*cr.a,cg.g*cg.a,cb.b*cb.a);",
     "  cov+=vec3(cr.a,cg.a,cb.a);}",
     " prem/=float(SAMPLES);",
