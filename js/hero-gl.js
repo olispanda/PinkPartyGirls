@@ -87,8 +87,8 @@
 
     /* A soap bubble as the reference shows it, read off its screenshots.
 
-       Through the middle the page shows practically unmoved — the film is
-       too thin to bend anything. The refraction lives in a band at the rim,
+       Through the middle the page shows barely changed, a touch enlarged as
+       through a weak lens. The real refraction lives in a band at the rim,
        where the eye looks through the wall edge-on and so through a long
        run of it: there the band shows what lies around the bubble, squeezed
        in towards the edge, so letters just outside reappear inside as thin
@@ -100,11 +100,13 @@
        something this canvas can do to a page it cannot see. It lives in a
        second canvas blended with overlay (FILM, below); only a faint
        coloured sheen is added here. */
-    "const float BAND = 0.28;", // width of the refracting rim, in radii
-    "const float BEND = 0.22;", // how far beyond the edge the rim reaches, in
-                                // radii: the ring that far outside the bubble
-                                // is what gets squeezed into the band
-    "const float CA = 0.08;",   // how much further blue reaches than red
+    "const float MAG = 1.08;",  // how much the middle enlarges
+    "const float BAND = 0.30;", // width of the rim band, in radii
+    "const float BEND = 0.20;", // how far beyond the edge the rim reaches, in
+                                // radii: everything out to there is squeezed
+                                // into the band
+    "const float CA = 0.14;",   // how much further blue reaches than red,
+                                // in the band
     "const int SAMPLES = 3;",   // rays per colour band
     "const float SHEEN = 0.006;",    // film colour over the middle, as added light
     "const float SHEEN_RIM = 0.025;", // … and extra towards the rim
@@ -152,10 +154,10 @@
     " return vec4(col,1.0);}",
 
     /* One look-up at spectral position t, -1 red to +1 blue: the page
-       sampled `reach` radii further out along dir, and blue a touch further
-       than red, which is the fringe. */
-    "vec4 bend(vec2 frag,vec2 dir,float reach,float t){",
-    " return scene(frag+dir*reach*(1.0+CA*t)*uRadius);}",
+       sampled base + rim radii further out along dir, with the rim part a
+       touch longer for blue than for red, which is the fringe. */
+    "vec4 bend(vec2 frag,vec2 dir,float base,float rim,float t){",
+    " return scene(frag+dir*(base+rim*(1.0+CA*t))*uRadius);}",
 
     "void main(){",
     " vec2 frag=vec2(vUv.x,1.0-vUv.y)*uRes;",
@@ -166,16 +168,19 @@
     " if(r>=1.0||uAlpha<=0.004){vec4 p=scene(frag);gl_FragColor=vec4(p.rgb*p.a,p.a);return;}",
     /* the sphere: analytic normal of a hemisphere */
     " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
-    /* How far out the band looks: nothing through the middle, rising with
-       the square across the band to BEND at the edge. Looking outwards is
-       what the reference does — a vertical stroke just inside its left rim
-       comes out as "(", ends curling in, and letters just outside show up a
-       second time as a squeezed arc inside the edge. Pulling inwards, tried
-       before, gave ")" and hid those letters instead. This can never fold,
-       whatever the numbers: the further out a pixel sits, the further out
-       it looks. */
+    /* Where each pixel looks, as a radius: r/MAG through the middle — a
+       touch enlarged — plus a term rising with the square across the rim
+       band, so the very edge looks BEND beyond itself. Everything from just
+       inside the band out to that far beyond the bubble is squeezed into
+       the band, harder towards the edge: letters crossing it curl into thick
+       arcs that hug the rim, a stroke just inside the left rim comes out as
+       "(", and letters just outside show up a second time inside the edge —
+       all as in the reference. (Pulling inwards, tried before, gave ")" and
+       hid those letters instead.) The radius looked at only ever grows with
+       r, so nothing folds back on itself, whatever the numbers. */
     " float u=max(0.0,r-(1.0-BAND))/BAND;",
-    " float reach=BEND*u*u;",
+    " float base=r*(1.0/MAG-1.0);",
+    " float rim=(1.0+BEND-1.0/MAG)*u*u;",
     " vec2 dir=rel/max(length(rel),1e-4);",
     /* A spectrum rather than three copies: each colour band is swept by a
        few rays at neighbouring indices, so the fringe is a smooth rainbow.
@@ -185,9 +190,9 @@
     " vec3 prem=vec3(0.0),cov=vec3(0.0);",
     " for(int i=0;i<SAMPLES;i++){",
     "  float s=(float(i)+0.5)/float(SAMPLES)*0.6667;",
-    "  vec4 cr=bend(frag,dir,reach,-1.0+s);",
-    "  vec4 cg=bend(frag,dir,reach,-0.3333+s);",
-    "  vec4 cb=bend(frag,dir,reach,0.3333+s);",
+    "  vec4 cr=bend(frag,dir,base,rim,-1.0+s);",
+    "  vec4 cg=bend(frag,dir,base,rim,-0.3333+s);",
+    "  vec4 cb=bend(frag,dir,base,rim,0.3333+s);",
     "  prem+=vec3(cr.r*cr.a,cg.g*cg.a,cb.b*cb.a);",
     "  cov+=vec3(cr.a,cg.a,cb.a);}",
     " prem/=float(SAMPLES);",
