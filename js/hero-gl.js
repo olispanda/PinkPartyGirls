@@ -43,6 +43,26 @@
     "  +0.012*cos(4.0*(a-0.04*t)+2.3)*sin(2.6*t+0.4);}"
   ].join("\n");
 
+  /* The soap film's colour, shared by both canvases: the main one adds it as
+     a faint sheen of light, the film canvas tints its overlay with it.
+
+     Thin-film interference: light off the film's front and back surfaces
+     interferes, and which wavelengths survive depends on the thickness (in
+     nanometres) and the angle inside the film. The film is thinner at the
+     top, where it drains, and stirred by slow swirls. n is the surface
+     normal, t the time; the result runs 0..2 per channel and averages 1. */
+  var FILMPATTERN = [
+    "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,4.1414)))*43758.5453);}",
+    "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);",
+    " return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}",
+    "vec3 filmColour(vec3 n,float t){",
+    " float th=mix(300.0,620.0,0.5+0.5*n.y)",
+    "  +240.0*(noise(n.xy*1.3+vec2(t*0.05,-t*0.035))-0.5)",
+    "  +120.0*(noise(n.xy*2.7-t*0.06)-0.5);",
+    " float sinT=sqrt(1.0-n.z*n.z)/1.33;", // 1.33: soapy water
+    " return 1.0-cos(12.566*1.33*th*sqrt(1.0-sinT*sinT)/vec3(650.0,532.0,450.0));}"
+  ].join("\n");
+
   var FRAG = [
     "precision highp float;",
     "varying vec2 vUv;",
@@ -63,26 +83,32 @@
     "uniform vec3 uAccent;",
     "uniform float uHasVideo;",
     WOBBLE,
+    FILMPATTERN,
 
     /* A soap bubble as the reference shows it, read off its screenshots.
 
        Through the middle the page shows practically unmoved — the film is
-       too thin to bend anything. All the refraction lives in a narrow band
-       at the rim, where the eye looks through the wall edge-on and so
-       through a long run of it: there the picture is pulled inwards and
-       folded, so letters crossing the edge curl into arcs along it, with a
-       fine rainbow where the colours part.
+       too thin to bend anything. The refraction lives in a band at the rim,
+       where the eye looks through the wall edge-on and so through a long
+       run of it: there the picture is pulled outwards, so letters near the
+       edge stretch and curve along it, with a fine rainbow where the
+       colours part.
 
        The milky, iridescent body is not drawn here at all. It lightens
        whatever is behind in proportion to how light that is — milky over
        pink, barely there over black — and that is a blend mode, not
        something this canvas can do to a page it cannot see. It lives in a
-       second canvas blended with soft-light (FILM, below). */
-    "const float BAND = 0.16;", // width of the refracting rim, in radii
-    "const float BEND = 0.30;", // how far the rim pulls the picture in, in radii
-    "const float IOR = 1.33;",  // soapy water
-    "const float CA = 0.08;",   // spread of the index across the spectrum
+       second canvas blended with overlay (FILM, below); only a faint
+       coloured sheen is added here. */
+    "const float BAND = 0.35;", // width of the refracting rim, in radii
+    "const float BEND = 0.14;", // how far the edge pulls the picture out, in
+                                // radii. Keep it under BAND/2: past that the
+                                // mapping folds back and letters come out as
+                                // mirrored drips instead of curving
+    "const float CA = 0.08;",   // how much further blue is pulled than red
     "const int SAMPLES = 3;",   // rays per colour band
+    "const float SHEEN = 0.012;",    // film colour over the middle, as added light
+    "const float SHEEN_RIM = 0.045;", // … and extra towards the rim
 
     /* object-fit: cover, in shader form */
     "vec2 coverUV(vec2 frag,vec2 res,vec2 tex){",
@@ -126,12 +152,11 @@
     " col=mix(col,txt.rgb,txt.a);",
     " return vec4(col,1.0);}",
 
-    /* One refracted look-up at spectral position t, -1 red to +1 blue. The
-       eye ray is bent by Snell at the surface; w ramps the bend in across
-       the rim band, so the middle is left alone. */
-    "vec4 bend(vec2 frag,vec3 n,float w,float t){",
-    " vec2 o=refract(vec3(0.0,0.0,-1.0),n,1.0/(IOR*(1.0+CA*t))).xy;",
-    " return scene(frag+o*w*BEND*uRadius);}",
+    /* One look-up at spectral position t, -1 red to +1 blue: the picture
+       pulled outwards by `pull` radii — sampled that much further in along
+       dir — and blue a touch further than red, which is the fringe. */
+    "vec4 bend(vec2 frag,vec2 dir,float pull,float t){",
+    " return scene(frag-dir*pull*(1.0+CA*t)*uRadius);}",
 
     "void main(){",
     " vec2 frag=vec2(vUv.x,1.0-vUv.y)*uRes;",
@@ -142,8 +167,14 @@
     " if(r>=1.0||uAlpha<=0.004){vec4 p=scene(frag);gl_FragColor=vec4(p.rgb*p.a,p.a);return;}",
     /* the sphere: analytic normal of a hemisphere */
     " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
-    /* 0 through the middle, rising to full strength across the rim band */
-    " float w=smoothstep(1.0-BAND,1.0-BAND*0.3,r);",
+    /* How far the picture is pulled out: nothing through the middle, rising
+       with the square across the rim band to BEND at the edge. Gentle enough
+       that the mapping never turns back on itself, so letters only stretch
+       and curve along the rim, and the sliver right under the edge slips
+       out of view — as in the reference. */
+    " float u=max(0.0,r-(1.0-BAND))/BAND;",
+    " float pull=BEND*u*u;",
+    " vec2 dir=rel/max(length(rel),1e-4);",
     /* A spectrum rather than three copies: each colour band is swept by a
        few rays at neighbouring indices, so the fringe is a smooth rainbow.
        Summed premultiplied — over the sections the scene is transparent
@@ -152,16 +183,20 @@
     " vec3 prem=vec3(0.0),cov=vec3(0.0);",
     " for(int i=0;i<SAMPLES;i++){",
     "  float s=(float(i)+0.5)/float(SAMPLES)*0.6667;",
-    "  vec4 cr=bend(frag,n,w,-1.0+s);",
-    "  vec4 cg=bend(frag,n,w,-0.3333+s);",
-    "  vec4 cb=bend(frag,n,w,0.3333+s);",
+    "  vec4 cr=bend(frag,dir,pull,-1.0+s);",
+    "  vec4 cg=bend(frag,dir,pull,-0.3333+s);",
+    "  vec4 cb=bend(frag,dir,pull,0.3333+s);",
     "  prem+=vec3(cr.r*cr.a,cg.g*cg.a,cb.b*cb.a);",
     "  cov+=vec3(cr.a,cg.a,cb.a);}",
     " prem/=float(SAMPLES);",
     " float a=dot(cov,vec3(1.0/(3.0*float(SAMPLES))));",
-    /* The wall seen edge-on catches a hairline of light. Added, so it
-       lightens whatever is behind; the film canvas does the rest. */
-    " prem+=vec3(0.16)*pow(1.0-n.z,6.0);",
+    /* The film catches a little light of its own, coloured by interference:
+       the oily sheen that shows even over black, where the overlay has
+       nothing to lighten. Faint across the middle, stronger towards the rim
+       where the wall is seen edge-on, plus a hairline right at the edge.
+       Added, so it lightens whatever is behind. */
+    " vec3 sheen=filmColour(n,uTime)*0.5;",
+    " prem+=sheen*(SHEEN+SHEEN_RIM*pow(1.0-n.z,2.0))+vec3(0.10)*pow(1.0-n.z,6.0);",
     /* a pixel and a half of feathering at the silhouette, whatever the size */
     " float edge=1.0-smoothstep(1.0-1.5/uRadius,1.0,r);",
     " vec4 plain=scene(frag);",
@@ -171,15 +206,18 @@
   ].join("\n");
 
   /* The film: the bubble's body, drawn into a small canvas of its own that
-     the browser blends onto the page with mix-blend-mode: soft-light.
+     the browser blends onto the page with mix-blend-mode: overlay.
 
-     Soft-light is the point. A value of one half leaves the page as it is;
-     above that it lightens, and it lightens light things far more than dark
-     ones — which is what the reference bubble does: milky over a pale
-     background, a faint sheen over black. Per channel, too, so where the
-     film favours a colour it tints the page towards it. The browser does
-     this against the real page pixels, sections included — the one thing
-     the main canvas cannot, since it never sees the page behind it. */
+     Overlay is the point. A value of one half leaves the page as it is;
+     above that it scales dark tones up in proportion — black stays black,
+     the dark hero brightens only a touch — and turns pale ones milky, which
+     is what the reference bubble does over a light background. (Soft light,
+     tried first, lifts dark mid-tones most of all, and those are exactly
+     what the hero video is made of: it laid a grey veil over the bubble and
+     made it read as a magnifying glass.) Per channel, so where the film
+     favours a colour it tints the page towards it. The browser does this
+     against the real page pixels, sections included — the one thing the
+     main canvas cannot, since it never sees the page behind it. */
   var FILM = [
     "precision highp float;",
     "varying vec2 vUv;",
@@ -188,21 +226,13 @@
     "uniform float uAlpha;",
     "uniform float uTime;",
     WOBBLE,
+    FILMPATTERN,
 
-    "const float FILM_N = 1.33;", // refractive index of soapy water
-    "const float MILK = 0.72;",   // how milky the body is, 0 … 1
-    "const float IRI = 0.32;",    // how strongly interference colours it;
-                                  // much more and it bands like an oil slick
-
-    "float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,4.1414)))*43758.5453);}",
-    "float noise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.0-2.0*f);",
-    " return mix(mix(hash(i),hash(i+vec2(1.0,0.0)),f.x),mix(hash(i+vec2(0.0,1.0)),hash(i+vec2(1.0,1.0)),f.x),f.y);}",
-
-    /* Thin-film interference: light off the film's front and back surfaces
-       interferes, and which wavelengths survive depends on the thickness (d,
-       in nanometres) and the angle inside the film. Runs 0..2, averages 1. */
-    "vec3 film(float d,float cosT){",
-    " return 1.0-cos(12.566*FILM_N*d*cosT/vec3(650.0,532.0,450.0));}",
+    "const float MILK = 0.45;", // how milky the body is, 0 … 1
+    "const float IRI = 0.10;",  // how strongly the film colours it. Overlay
+                                // scales each channel on its own, so a little
+                                // goes a long way: at 0.6 it was an acid-trip
+                                // rainbow disc
 
     "void main(){",
     " vec2 rel=(vec2(vUv.x,1.0-vUv.y)-0.5)*uRes;",
@@ -211,16 +241,10 @@
     " float r=length(d);",
     " if(r>=1.0||uAlpha<=0.004){gl_FragColor=vec4(0.0);return;}",
     " vec3 n=vec3(d,sqrt(max(0.0,1.0-dot(d,d))));",
-    " vec2 w=n.xy;",
-    /* thinner at the top where the film drains, stirred by slow swirls */
-    " float th=mix(300.0,620.0,0.5+0.5*w.y)",
-    "  +240.0*(noise(w*1.3+vec2(uTime*0.05,-uTime*0.035))-0.5)",
-    "  +120.0*(noise(w*2.7-uTime*0.06)-0.5);",
-    " float sinT=sqrt(1.0-n.z*n.z)/FILM_N;",
-    " vec3 tint=mix(vec3(1.0),film(th,sqrt(1.0-sinT*sinT)),IRI);",
+    " vec3 tint=mix(vec3(1.0),filmColour(n,uTime),IRI);",
     /* milkier towards the rim, where the wall is seen edge-on */
     " float lift=mix(MILK,1.0,pow(1.0-n.z,2.0));",
-    " vec3 s=0.5+0.5*clamp(tint*lift,0.0,1.0);",
+    " vec3 s=0.5+0.3*clamp(tint*lift,0.0,1.0);",
     " float k=uAlpha*(1.0-smoothstep(1.0-1.5/uRadius,1.0,r));",
     " gl_FragColor=vec4(s*k,k);}"
   ].join("\n");
