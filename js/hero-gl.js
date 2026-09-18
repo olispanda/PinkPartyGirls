@@ -451,9 +451,40 @@
     var TEXT_SEL = [
       ".slide-statement__heading",
       ".slide-events__heading",
-      ".slide-events__list",
-      ".btn-dark-outline"
+      ".slide-events__list"
     ].join(",");
+
+    /* Controls are the one thing that must NOT go through the texture, and
+       they are excluded wherever they appear — as a block of their own, or
+       sitting inside one of the blocks above. .pink-word is the easter-egg
+       chip from js/pink-egg.js: prose to look at, but a real button (it
+       carries role="button" and opens the hue picker).
+
+       A glyph survives the rim: bent, it is still a letter. A pill outline
+       does not. It is a single hairline stroke running a couple of hundred
+       pixels, and the rim band squeezes everything from just inside itself
+       out to BEND radii beyond the bubble into that strip — so the stroke
+       arrives as a curved arc plus a second, ghosted copy of itself, which
+       reads as a broken button rather than as glass. The wobble keeps it
+       moving, so it never settles into something the eye forgives.
+
+       The redraw below is also lossy in a way prose never notices, and a
+       control does. It knows about background-color and borders, so it
+       misses the chip's ring (a box-shadow) and its rotate(-1deg) — and
+       because the box it paints comes from getClientRects, which on a
+       rotated element is the enclosing upright rectangle, it lands a couple
+       of pixels PROUD of the real chip. The canvas sits above the page, so
+       that oversized slab covers the very ring it failed to draw.
+
+       Left as real HTML they keep all of it: ring, tilt, hover, focus ring
+       and the ::after arrow (a pseudo-element, which the character walk
+       below could never have picked up anyway). The bubble still passes
+       over them — the canvas is transparent where it draws nothing, and the
+       film overlay tints them as it goes by. Only the bending is gone. */
+    var CTRL_SEL = ".btn,.btn-dark-outline,.pink-word";
+    function isControl(node) {
+      return !!(node && node.closest && node.closest(CTRL_SEL));
+    }
     var pageTex = makeTex(2);
     gl.uniform1i(U.uPage, 2);
     var pageH = 1, pageReady = false;
@@ -470,6 +501,7 @@
         // Colour and case follow the text's own parent, not the block: the
         // "pink" chip sits inside the heading with its own styling.
         var owner = node.parentElement || el;
+        if (isControl(owner)) continue; // controls stay real HTML — see CTRL_SEL
         if (owner !== curOwner) {
           curOwner = owner;
           cur = null; // never merge two elements' text into one run
@@ -497,9 +529,12 @@
     // Anything inside the block that paints its own box — the chip's marker
     // highlight, for one — has to come along, or the text arrives naked.
     function paintBoxes(cx, el, sy) {
-      // Include the element itself: an outlined button *is* the element, and
-      // looking only at its children loses the outline.
-      var kids = [el].concat(Array.prototype.slice.call(el.querySelectorAll("*")));
+      // The element itself comes along: a block can carry its own fill or
+      // border, and looking only at its children would lose it. Controls drop
+      // out here for the reason given at CTRL_SEL — their outline is what the
+      // rim mangles, so they never enter the texture.
+      var kids = [el].concat(Array.prototype.slice.call(el.querySelectorAll("*")))
+        .filter(function (k) { return !isControl(k); });
       for (var i = 0; i < kids.length; i++) {
         var k = kids[i];
         var ks = getComputedStyle(k);

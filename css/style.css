@@ -1804,9 +1804,18 @@ html.js-anim .reveal.is-in {
    clickable and text stopped being selectable. Transparent leaves the element
    fully live — clicks, focus, hover, text selection and the selection
    highlight all still work, and screen readers and crawlers still read it.
-   Only the paint is gone, because the canvas above is doing that. */
+   Only the paint is gone, because the canvas above is doing that.
+
+   Controls are excluded (the :not()s below, and js/hero-gl.js skips them
+   when it draws): their outline is a long hairline that the bubble's rim
+   squeezes into an arc plus a ghost copy, which reads as a broken button.
+   .pink-word is in here too — it looks like prose but is a button, and the
+   redraw loses its ring (a box-shadow) and its tilt on top of that. They
+   stay real HTML, keep hover, focus, the tilt and the ::after arrow, and
+   the bubble simply passes over them. Both hold text and no child elements,
+   so excluding the control itself is enough. */
 .is-gl-text,
-.is-gl-text * {
+.is-gl-text *:not(.btn):not(.pink-word) {
   color: transparent !important;
   background-color: transparent !important;
   border-color: transparent !important;
