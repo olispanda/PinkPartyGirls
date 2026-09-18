@@ -972,6 +972,14 @@ html.snap-page {
   opacity: 1;
 }
 
+/* No cover to fade in over — a release with only a teaser clip and no
+   image would otherwise show nothing but the empty placeholder gradient
+   until hovered (worse still on touch, which has no real hover at all).
+   Visible from the start; only playback stays hover-gated. */
+.card__teaser--solo {
+  opacity: 1;
+}
+
 /* Uploaded photos (cover art, band members) are the one thing on the page
    that can carry any colour at all — a photo is whatever the band shot it
    in. Desaturated here by default, same as the hero video, so the only

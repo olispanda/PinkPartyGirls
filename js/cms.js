@@ -185,13 +185,23 @@
     if (grid && Array.isArray(d.releases) && d.releases.length) {
       grid.innerHTML = d.releases
         .map(function (r) {
-          // Optional short preview clip, played on hover over the cover —
-          // a separate field from "cover" (an image field, so a video
-          // upload there is rejected by the CMS rather than silently
-          // failing to render as an <img>).
+          // Optional short preview clip — a separate field from "cover" (an
+          // image field, so a video upload there is rejected by the CMS
+          // rather than silently failing to render as an <img>).
+          //
+          // With a cover to sit on top of, the clip stays invisible (see
+          // .card__teaser in style.css) and only fades in over it on hover.
+          // Without one there is nothing underneath it to show at rest, so
+          // it has to be visible on its own — "card__teaser--solo" turns
+          // off that fade, and preload="metadata" (rather than "none")
+          // gets its first frame on screen without a hover, tap, or
+          // downloading the whole clip up front. Either way, playback
+          // itself is still hover-only.
           var teaser = r.teaser
-            ? '<video class="card__teaser" src="' + esc(r.teaser) +
-              '" muted loop playsinline preload="none" onmouseenter="this.play()" onmouseleave="this.pause()"></video>'
+            ? '<video class="card__teaser' + (r.cover ? "" : " card__teaser--solo") +
+              '" src="' + esc(r.teaser) +
+              '" muted loop playsinline preload="' + (r.cover ? "none" : "metadata") +
+              '" onmouseenter="this.play()" onmouseleave="this.pause()"></video>'
             : "";
           var art = r.cover || r.teaser
             ? '<div class="card__art" style="padding:0;">' +
