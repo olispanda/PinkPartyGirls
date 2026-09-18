@@ -185,10 +185,22 @@
     if (grid && Array.isArray(d.releases) && d.releases.length) {
       grid.innerHTML = d.releases
         .map(function (r) {
-          var art = r.cover
+          // Optional short preview clip, played on hover over the cover —
+          // a separate field from "cover" (an image field, so a video
+          // upload there is rejected by the CMS rather than silently
+          // failing to render as an <img>).
+          var teaser = r.teaser
+            ? '<video class="card__teaser" src="' + esc(r.teaser) +
+              '" muted loop playsinline preload="none" onmouseenter="this.play()" onmouseleave="this.pause()"></video>'
+            : "";
+          var art = r.cover || r.teaser
             ? '<div class="card__art" style="padding:0;">' +
-              '<img src="' + esc(r.cover) + '" alt="' + esc(r.title) +
-              '" style="width:100%;height:100%;object-fit:cover;" /></div>'
+              (r.cover
+                ? '<img src="' + esc(r.cover) + '" alt="' + esc(r.title) +
+                  '" style="width:100%;height:100%;object-fit:cover;" />'
+                : "") +
+              teaser +
+              "</div>"
             : '<div class="card__art">Cover Art</div>';
 
           var meta = [r.type, r.year].filter(Boolean).join(" &middot; ");

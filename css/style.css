@@ -939,6 +939,7 @@ html.snap-page {
 }
 
 .card__art {
+  position: relative; /* anchors .card__teaser */
   aspect-ratio: 1 / 1;
   background: linear-gradient(135deg, var(--accent), #3a0f1e);
   display: flex;
@@ -949,6 +950,26 @@ html.snap-page {
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+/* Optional per-release preview clip (js/cms.js, field "teaser"), layered
+   over the cover and faded in on hover. Stays fully transparent (not
+   display: none) so it still receives the hover that plays it — opacity,
+   unlike visibility/display, never blocks pointer events. Plain grayscale
+   rather than the hero's pixel-level pink-only treatment: that needs a
+   WebGL pass over a live video texture, which only the hero canvas runs. */
+.card__teaser {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  filter: grayscale(1) contrast(1.05);
+}
+.card:hover .card__teaser {
+  opacity: 1;
 }
 
 /* Uploaded photos (cover art, band members) are the one thing on the page

@@ -115,6 +115,7 @@ content:
               values: [Single, EP, Album]
           - { name: year, label: Jahr, type: string }
           - { name: cover, label: Cover, type: image, required: false }
+          - { name: teaser, label: Teaser-Video (mp4), type: file, required: false, description: "Optional. Wird beim Hovern übers Cover abgespielt (Bild-Upload gehört ins Feld 'Cover' oben, hier nur Video)." }
           - { name: spotify, label: Spotify-Link, type: string, required: false }
           - { name: apple, label: Apple-Music-Link, type: string, required: false }
           - { name: youtube, label: YouTube-Link, type: string, required: false }
