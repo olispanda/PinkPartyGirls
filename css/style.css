@@ -816,6 +816,7 @@ html.snap-page {
 
 .mini-footer__copy {
   grid-column: 2 / 6;
+  grid-row: 1;
   font-family: var(--font-ui);
   font-size: 0.85rem;
   color: var(--accent);
@@ -823,6 +824,7 @@ html.snap-page {
 
 .mini-footer__mark {
   grid-column: 6 / 8;
+  grid-row: 1;
   font-family: var(--font-shapes);
   font-size: 32px;
   line-height: 1;
@@ -835,6 +837,10 @@ html.snap-page {
      content column, three tracks were no longer enough for four labels and
      YouTube wrapped onto its own line. justify-self keeps it flush right. */
   grid-column: 7 / 12;
+  /* Row one, explicitly. The mark spans tracks 6-7 and this starts at 7, so
+     the two overlap; with no row given, auto-placement reads that as a clash
+     and drops the links onto a second row under the copyright line. */
+  grid-row: 1;
   display: flex;
   gap: 1.5rem;
   font-family: var(--font-ui);
@@ -1278,6 +1284,7 @@ html:not(.snap-page) main {
 
 .footer__copy {
   grid-column: 2 / 6;
+  grid-row: 1;
   font-family: var(--font-ui);
   color: var(--accent);
   font-size: 0.85rem;
@@ -1285,6 +1292,7 @@ html:not(.snap-page) main {
 
 .footer__mark {
   grid-column: 6 / 8;
+  grid-row: 1;
   justify-self: center;
   font-family: var(--font-shapes);
   color: var(--accent);
@@ -1294,6 +1302,10 @@ html:not(.snap-page) main {
 
 .footer__social {
   grid-column: 7 / 12; /* see .mini-footer__social — four labels need the room */
+  /* Row one, explicitly. The mark spans tracks 6-7 and this starts at 7, so
+     the two overlap; with no row given, auto-placement reads that as a clash
+     and drops the links onto a second row under the copyright line. */
+  grid-row: 1;
   justify-self: end;
   display: flex;
   gap: 1.5rem;
@@ -1322,6 +1334,7 @@ html:not(.snap-page) main {
   .footer__mark,
   .footer__social {
     grid-column: 1 / -1;
+    grid-row: auto; /* stacked here, so let each take its own row again */
     justify-self: center;
   }
 
