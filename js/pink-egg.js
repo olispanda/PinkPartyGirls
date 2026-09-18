@@ -72,6 +72,12 @@
     while (el) {
       if (SKIP_TAGS[el.tagName]) return true;
       if (el.classList && (el.classList.contains("pink-word") || el.classList.contains("pink-picker"))) return true;
+      // The footer copyright line ("Pink Party Girls — 2026 ©", both the
+      // fixed mini-footer on home and the plain footer elsewhere) is the
+      // band's own name, not a playful mention of the color — chipping it
+      // reads as a rendering glitch rather than an easter egg, especially
+      // under the footer's mix-blend-mode: difference.
+      if (el.getAttribute && el.getAttribute("data-cms") === "footer-copy") return true;
       el = el.parentElement;
     }
     return false;

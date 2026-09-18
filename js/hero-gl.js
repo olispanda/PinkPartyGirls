@@ -146,7 +146,12 @@
     "  col=vec3(g);}",
     " col=mix(col,vec3(0.035,0.031,0.035),0.45);",
     " float d=distance(h,vec2(uHeroRect.z,0.0))/(uHeroRect.z*1.05);",
-    " col=mix(col,uAccent,0.55*(1.0-smoothstep(0.0,1.0,d)));",
+    /* The corner wash stays monochrome — luma of the accent rather than the
+       accent itself — so the hero background is always black & white, even
+       when the pink-egg picker changes --accent. Only the wordmark below
+       keeps the real colour: that's the logo, not the photographic image. */
+    " float washG=dot(uAccent,vec3(0.299,0.587,0.114));",
+    " col=mix(col,vec3(washG),0.55*(1.0-smoothstep(0.0,1.0,d)));",
     " vec2 luv=(frag-uLogoRect.xy)/uLogoRect.zw;",
     " if(luv.x>=0.0&&luv.x<=1.0&&luv.y>=0.0&&luv.y<=1.0){",
     "  float a=texture2D(uLogo,luv).a;",

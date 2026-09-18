@@ -625,9 +625,9 @@ html.snap-page {
   background: var(--accent);
 }
 
-/* Home slide: black & white video background, pink gradient wash on top.
-   The gradient uses background-attachment: fixed so it stays put in the
-   viewport while the section content scrolls past it. */
+/* Home slide: black & white video background, monochrome gradient wash on
+   top. The gradient uses background-attachment: fixed so it stays put in
+   the viewport while the section content scrolls past it. */
 
 .slide-home {
   background: var(--surface);
@@ -653,6 +653,11 @@ html.snap-page {
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse 1100px 850px at 100% 0%, color-mix(in srgb, var(--accent) 55%, transparent), transparent 70%), rgba(9, 8, 9, 0.45);
+  /* The gradient itself is mixed from --accent (so it still tracks the
+     pink-egg picker's hue as a brightness), but grayscale() strips the hue
+     back out at paint time — the hero background stays monochrome even as
+     --accent changes, matching the WebGL scene (see js/hero-gl.js washG). */
+  filter: grayscale(1);
   background-repeat: no-repeat;
   background-attachment: fixed;
 }
@@ -938,6 +943,16 @@ html.snap-page {
   font-size: 0.9rem;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+}
+
+/* Uploaded photos (cover art, band members) are the one thing on the page
+   that can carry any colour at all — a photo is whatever the band shot it
+   in. Desaturated here, same as the hero video, so the only colour left
+   anywhere on the site is the deliberate pink of the UI itself (buttons,
+   tags, the wordmark, accent text). */
+.card__art img,
+.member__photo img {
+  filter: grayscale(1) contrast(1.05);
 }
 
 .card__body {
