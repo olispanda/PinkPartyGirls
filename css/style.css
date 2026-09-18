@@ -953,12 +953,25 @@ html.snap-page {
 
 /* Uploaded photos (cover art, band members) are the one thing on the page
    that can carry any colour at all — a photo is whatever the band shot it
-   in. Desaturated here, same as the hero video, so the only colour left
-   anywhere on the site is the deliberate pink of the UI itself (buttons,
-   tags, the wordmark, accent text). */
+   in. Desaturated here by default, same as the hero video, so the only
+   colour left anywhere on the site is the deliberate pink of the UI itself
+   (buttons, tags, the wordmark, accent text) — plus whatever in the photo
+   was already pink, see below. */
 .card__art img,
 .member__photo img {
   filter: grayscale(1) contrast(1.05);
+}
+
+/* js/pink-photo.js re-processes each photo pixel by pixel — same hue test
+   as the hero video's pinkAmount() in js/hero-gl.js — so anything already
+   pink in the shot (stage light, an outfit, a poster) survives in colour
+   while the rest goes grey. That result is baked into the photo's own
+   pixels, so the plain grayscale() above — otherwise correct as the no-JS /
+   cross-origin fallback — has to come off or it would flatten the colour
+   the script just put back. */
+.card__art img.is-pink-baked,
+.member__photo img.is-pink-baked {
+  filter: none;
 }
 
 .card__body {

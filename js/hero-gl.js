@@ -118,6 +118,27 @@
     " if(rs>rt){s.y=rt/rs;}else{s.x=rs/rt;}",
     " return (frag/res-0.5)*s+0.5;}",
 
+    /* How pink a pixel already is, 0..1 — the video keeps its own colour
+       only where this is high, and fades to the greyscale look everywhere
+       else (see its one use, in scene() below). Hue first: the standard
+       six-wedge formula off max/min/mid channel, compared as a circular
+       distance to the brand's pink (340°) so it wraps past 360 correctly.
+       Gated by saturation too, so a grey or near-black pixel — hue is
+       meaningless once there is almost no colour left to have a hue —
+       never gets nudged back towards colour by hue noise. */
+    "float pinkAmount(vec3 c){",
+    " float mx=max(c.r,max(c.g,c.b)),mn=min(c.r,min(c.g,c.b)),d=mx-mn;",
+    " if(d<0.0005||mx<0.02) return 0.0;",
+    " float h;",
+    " if(mx==c.r) h=mod((c.g-c.b)/d,6.0);",
+    " else if(mx==c.g) h=(c.b-c.r)/d+2.0;",
+    " else h=(c.r-c.g)/d+4.0;",
+    " h*=60.0; if(h<0.0) h+=360.0;",
+    " float hd=abs(h-340.0); hd=min(hd,360.0-hd);",
+    " float hueM=1.0-smoothstep(22.0,55.0,hd);",
+    " float satM=smoothstep(0.22,0.42,d/mx);",
+    " return hueM*satM;}",
+
     /* The hero as it looks without the bubble: greyscale video, the pink
        wash from the top right, then the wordmark.
 
@@ -143,7 +164,10 @@
     "  vec3 v=texture2D(uVideo,vuv).rgb;",
     "  float g=dot(v,vec3(0.299,0.587,0.114));",
     "  g=clamp((g-0.5)*1.05+0.5,0.0,1.0);",
-    "  col=vec3(g);}",
+    /* Only the already-pink pixels keep their colour (stage lights, a pink
+       shirt, the accent on a poster) — everything else is the greyscale
+       above, exactly as before. */
+    "  col=mix(vec3(g),v,pinkAmount(v));}",
     " col=mix(col,vec3(0.035,0.031,0.035),0.45);",
     " float d=distance(h,vec2(uHeroRect.z,0.0))/(uHeroRect.z*1.05);",
     /* The corner wash stays monochrome — luma of the accent rather than the
