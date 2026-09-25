@@ -3,21 +3,15 @@
   "lede": "where to catch Pink Party Girls next.",
   "shows": [
     {
-      "date": "2026-09-17T19:00",
-      "title": "Winterthur",
-      "location": "Dachterasse zum Wiedehopf Haldenstrasse 69 8400 Winterthur",
+      "date": "2027-02-04T19:00",
+      "title": "The Pirates - Hinwil",
+      "location": "Ueberlandstrasse 14, 8340 Hinwil",
       "free": true
     },
     {
       "date": "2026-09-17T10:56",
       "title": "Roxy Zürich",
       "location": "Zinistrasse 7, 8004 Zürich",
-      "free": true
-    },
-    {
-      "date": "2026-09-17T10:56",
-      "title": "Hinwil",
-      "location": "Ueberlandstrasse 14, 8340 Hinwil",
       "free": true
     }
   ]
