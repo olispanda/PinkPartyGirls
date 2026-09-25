@@ -13,6 +13,12 @@
       "title": "Roxy Zürich",
       "location": "Zinistrasse 7, 8004 Zürich",
       "free": true
+    },
+    {
+      "date": "2027-06-18T19:00",
+      "title": "Café Kunterbunt",
+      "location": "Bachtelstrasse 72, 8400 Winterthur",
+      "free": true
     }
   ]
 }
